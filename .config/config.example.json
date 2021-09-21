@@ -1,1 +1,38 @@
-{}
+{
+    "log": {
+        "showTimestamp": true
+    },
+
+    "database": {
+        "postgres": {
+            "dsn": "postgres://postgres:secret@db/autonuoma?sslmode=disable",
+            "queryTimeout": "10s"
+        }
+    },
+
+    "cipher": {
+        "aes": {
+            "key": "secret_must_be_16_or_32_bytes"
+        }
+    },
+
+    "auth": {
+        "passwordCost": 10,
+        "session": {
+            "sessionLifetime": "1h",
+            "cookieName": "session_id",
+            "cookieLifetime": "2h",
+            "secureCookie": true
+        }
+    },
+
+    "http": {
+        "port": "80",
+        "enablePprof": false
+    },
+
+    "webSocket": {
+        "port": "3333",
+        "connIdleTime": "30s"
+    }
+}

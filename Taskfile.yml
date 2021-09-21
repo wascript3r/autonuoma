@@ -1,0 +1,18 @@
+version: '3'
+
+silent: true
+
+tasks:
+  compose-stop:
+    desc: Stops docker-compose containers
+    dir: "{{ .COMPOSE_DIR }}"
+    cmds:
+      - docker-compose kill -s SIGTERM
+      - docker wait $(docker-compose ps -a -q) || echo "There are no existing containers..."
+
+  compose-run:
+    desc: Runs docker-compose
+    dir: "{{ .COMPOSE_DIR }}"
+    cmds:
+      - task: compose-stop
+      - docker-compose up -d

@@ -1,0 +1,2 @@
+# Docker Compose
+COMPOSE_DIR: .docker/compose
