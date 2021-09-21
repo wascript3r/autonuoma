@@ -9,17 +9,17 @@ require (
 	github.com/wascript3r/cryptopay v0.0.7
 	github.com/wascript3r/gocipher v0.0.0-20201105141458-6510a149f009
 	github.com/wascript3r/gopool v0.0.0-20200227213539-8fa9e794e69d
-	github.com/wascript3r/gows v0.0.0-20210527172759-c6f1fd962ff7
+	github.com/wascript3r/gows v0.0.0-20210921184742-6de1268e008c
 	github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99
 )
 
 require (
-	github.com/RussellLuo/timingwheel v0.0.0-20191211035242-0e67dbf0ae97 // indirect
+	github.com/RussellLuo/timingwheel v0.0.0-20201029015908-64de9d088c74 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
-	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
+	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
-	github.com/gobwas/ws v1.0.3 // indirect
+	github.com/gobwas/ws v1.1.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f // indirect
 	github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216 // indirect
