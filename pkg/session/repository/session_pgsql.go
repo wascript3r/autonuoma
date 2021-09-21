@@ -10,7 +10,7 @@ import (
 
 const (
 	insertSQL = "INSERT INTO sessions (id, user_id, expiration) VALUES ($1, $2, $3)"
-	getSQL    = "SELECT s.*, COALESCE(r.is_admin, false) AS is_admin FROM sessions s LEFT JOIN roles r ON r.user_id = s.user_id WHERE s.id = $1"
+	getSQL    = "SELECT s.*, u.role_id FROM sessions s INNER JOIN users u ON u.id = s.user_id INNER JOIN roles r ON r.id = u.role_id WHERE s.id = $1"
 	deleteSQL = "DELETE FROM sessions WHERE id = $1"
 )
 
@@ -30,7 +30,7 @@ func (p *PgRepo) Insert(ctx context.Context, ss *domain.Session) error {
 func (p PgRepo) Get(ctx context.Context, id string) (*domain.Session, error) {
 	s := &domain.Session{}
 
-	err := p.conn.QueryRowContext(ctx, getSQL, id).Scan(&s.ID, &s.UserID, &s.Expiration, &s.Role)
+	err := p.conn.QueryRowContext(ctx, getSQL, id).Scan(&s.ID, &s.UserID, &s.Expiration, &s.RoleID)
 	if err != nil {
 		return nil, pgsql.ParseSQLError(err)
 	}
