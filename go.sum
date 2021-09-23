@@ -84,8 +84,8 @@ github.com/wascript3r/goretry v0.0.0-20200627141250-c1ef4c1b0529/go.mod h1:4dbuR
 github.com/wascript3r/goretry v0.0.0-20200701213336-d69f512bec4f/go.mod h1:4dbuRp5QAJqxhX8tVLS7+dLU/gBL7rCvFalCgj7OHPY=
 github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216 h1:nb1gO8jQZKhKmc2Ei8kCnzrBWXG1RzyuC6VVvlsZ9mk=
 github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216/go.mod h1:LwB7eG/QzNAPv5T2jes7jMZZKPfmCwhttCzN1i/B5mE=
-github.com/wascript3r/gows v0.0.0-20210923163101-4fc090f1749f h1:vDApVm3G2WwqeSGLjkM03VkfYta7ELoryvSxTTl1UnY=
-github.com/wascript3r/gows v0.0.0-20210923163101-4fc090f1749f/go.mod h1:+/EwaalCNXFyqL3NM79lNsdY4sPmRfcGDPI3SGl3hsg=
+github.com/wascript3r/gows v0.0.0-20210923155446-024c006ffb78 h1:lTvcUWqWPFcKdZDb+JHt2eVlRe/ykLt9nPiFLmKcVdU=
+github.com/wascript3r/gows v0.0.0-20210923155446-024c006ffb78/go.mod h1:+/EwaalCNXFyqL3NM79lNsdY4sPmRfcGDPI3SGl3hsg=
 github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99 h1:0bVfBgty7NZDRIjEcWPfYoZJkypVuigqlZtFDcVOSOU=
 github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99/go.mod h1:19HmlCTCeK4g01lTTEyEXK5E0qOsb/FInurlV790ww8=
 golang.org/x/crypto v0.0.0-20170930174604-9419663f5a44/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

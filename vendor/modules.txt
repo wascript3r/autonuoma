@@ -56,7 +56,7 @@ github.com/wascript3r/gopool
 # github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216
 ## explicit; go 1.13
 github.com/wascript3r/gostr
-# github.com/wascript3r/gows v0.0.0-20210923163101-4fc090f1749f
+# github.com/wascript3r/gows v0.0.0-20210923155446-024c006ffb78
 ## explicit; go 1.13
 github.com/wascript3r/gows
 github.com/wascript3r/gows/eventbus
