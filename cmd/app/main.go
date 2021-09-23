@@ -152,7 +152,6 @@ func main() {
 	wsEventBus := eventbus.NewWsEventBus(wsPool, logger)
 
 	wsRouter := router.New(wsEventBus)
-	wsRouter.HandleMethod("ping", router.EmptyHandler)
 
 	sessionWsMid := _sessionWsMid.NewWSMiddleware(
 		_sessionWsMid.DefaultSessionKey,
