@@ -1,5 +1,9 @@
 version: '3'
 
+vars:
+  # Docker Compose
+  COMPOSE_DIR: .docker/compose
+
 silent: true
 
 tasks:
@@ -7,7 +11,7 @@ tasks:
     desc: Stops docker-compose containers
     dir: "{{ .COMPOSE_DIR }}"
     cmds:
-      - docker-compose kill -s SIGTERM
+      - docker-compose kill -s SIGTERM > /dev/null 2>&1 || echo "There are no running containers..."
       - docker wait $(docker-compose ps -a -q) || echo "There are no existing containers..."
 
   compose-run:
