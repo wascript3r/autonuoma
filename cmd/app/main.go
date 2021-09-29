@@ -40,6 +40,7 @@ import (
 	"github.com/wascript3r/gows"
 	"github.com/wascript3r/gows/eventbus"
 	wsMiddleware "github.com/wascript3r/gows/middleware"
+	_socketPool "github.com/wascript3r/gows/pool"
 	"github.com/wascript3r/gows/router"
 	"github.com/wascript3r/httputil"
 	"github.com/wascript3r/httputil/middleware"
@@ -181,6 +182,14 @@ func main() {
 	adminWsStack.Use(sessionWsMid.HasRole(domain.AdminRole))
 	adminWsStack.Use(wsLog)
 
+	// App context
+	ctx, cancel := context.WithCancel(context.Background())
+
+	socketPool, err := _socketPool.New(ctx, wsPool, logger, wsEventBus)
+	if err != nil {
+		fatalError(err)
+	}
+
 	_userWsHandler.NewWSHandler(
 		wsRouter,
 		adminWsStack,
@@ -189,15 +198,8 @@ func main() {
 		userUcase,
 		sessionUcase,
 		sessionWsMid,
+		socketPool,
 	)
-
-	// App context
-	ctx, cancel := context.WithCancel(context.Background())
-
-	// socketPool, err := _socketPool.New(ctx, wsPool, logger, wsEventBus)
-	// if err != nil {
-	// 	fatalError(err)
-	// }
 
 	wsListener, err := net.Listen(WSNetwork, ":"+Cfg.WebSocket.Port)
 	if err != nil {

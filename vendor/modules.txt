@@ -25,6 +25,9 @@ github.com/gobwas/pool/pbytes
 ## explicit; go 1.15
 github.com/gobwas/ws
 github.com/gobwas/ws/wsutil
+# github.com/google/uuid v1.3.0
+## explicit
+github.com/google/uuid
 # github.com/julienschmidt/httprouter v1.3.0
 ## explicit; go 1.7
 github.com/julienschmidt/httprouter
@@ -56,11 +59,12 @@ github.com/wascript3r/gopool
 # github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216
 ## explicit; go 1.13
 github.com/wascript3r/gostr
-# github.com/wascript3r/gows v0.0.0-20210923155446-024c006ffb78
+# github.com/wascript3r/gows v0.0.0-20210929182716-8730ab015b81
 ## explicit; go 1.13
 github.com/wascript3r/gows
 github.com/wascript3r/gows/eventbus
 github.com/wascript3r/gows/middleware
+github.com/wascript3r/gows/pool
 github.com/wascript3r/gows/router
 # github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99
 ## explicit; go 1.14

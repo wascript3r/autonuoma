@@ -37,6 +37,8 @@ github.com/gobwas/ws v1.0.3/go.mod h1:szmBTxLgaFppYjEmNtny/v3w89xOydFnnZMcgRRu/E
 github.com/gobwas/ws v1.1.0 h1:7RFti/xnNkMJnrK7D1yQ/iCIB5OrrY/54/H930kIbHA=
 github.com/gobwas/ws v1.1.0/go.mod h1:nzvNcVha5eUziGrbxFCo6qFIojQHjJV5cLYIbezhfL0=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
+github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
+github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/jessevdk/go-flags v0.0.0-20141203071132-1679536dcc89/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
@@ -84,8 +86,8 @@ github.com/wascript3r/goretry v0.0.0-20200627141250-c1ef4c1b0529/go.mod h1:4dbuR
 github.com/wascript3r/goretry v0.0.0-20200701213336-d69f512bec4f/go.mod h1:4dbuRp5QAJqxhX8tVLS7+dLU/gBL7rCvFalCgj7OHPY=
 github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216 h1:nb1gO8jQZKhKmc2Ei8kCnzrBWXG1RzyuC6VVvlsZ9mk=
 github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216/go.mod h1:LwB7eG/QzNAPv5T2jes7jMZZKPfmCwhttCzN1i/B5mE=
-github.com/wascript3r/gows v0.0.0-20210923155446-024c006ffb78 h1:lTvcUWqWPFcKdZDb+JHt2eVlRe/ykLt9nPiFLmKcVdU=
-github.com/wascript3r/gows v0.0.0-20210923155446-024c006ffb78/go.mod h1:+/EwaalCNXFyqL3NM79lNsdY4sPmRfcGDPI3SGl3hsg=
+github.com/wascript3r/gows v0.0.0-20210929182716-8730ab015b81 h1:vLJabsMqxwpwRLstppAbz5AoQt8b2lpv9r9ldK0qI8M=
+github.com/wascript3r/gows v0.0.0-20210929182716-8730ab015b81/go.mod h1:DVxXsHZ9TNySLB4INNqL79+DPlPhXqCyMfE8MqD1BZQ=
 github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99 h1:0bVfBgty7NZDRIjEcWPfYoZJkypVuigqlZtFDcVOSOU=
 github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99/go.mod h1:19HmlCTCeK4g01lTTEyEXK5E0qOsb/FInurlV790ww8=
 golang.org/x/crypto v0.0.0-20170930174604-9419663f5a44/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

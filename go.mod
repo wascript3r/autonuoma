@@ -9,7 +9,7 @@ require (
 	github.com/wascript3r/cryptopay v0.0.7
 	github.com/wascript3r/gocipher v0.0.0-20201105141458-6510a149f009
 	github.com/wascript3r/gopool v0.0.0-20200227213539-8fa9e794e69d
-	github.com/wascript3r/gows v0.0.0-20210923155446-024c006ffb78
+	github.com/wascript3r/gows v0.0.0-20210929182716-8730ab015b81
 	github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99
 )
 
@@ -20,6 +20,7 @@ require (
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f // indirect
 	github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216 // indirect

@@ -10,6 +10,7 @@ import (
 	"github.com/wascript3r/cryptopay/pkg/errcode"
 	"github.com/wascript3r/gows"
 	"github.com/wascript3r/gows/middleware"
+	"github.com/wascript3r/gows/pool"
 	"github.com/wascript3r/gows/router"
 )
 
@@ -17,14 +18,18 @@ type WSHandler struct {
 	userUcase    user.Usecase
 	sessionUcase session.Usecase
 	sessionMid   sessionHandler.Middleware
+	socketPool   *pool.Pool
 }
 
-func NewWSHandler(r *router.Router, admin *middleware.Stack, notAuth *middleware.Stack, uu user.Usecase, su session.Usecase, sm sessionHandler.Middleware) {
+func NewWSHandler(r *router.Router, admin *middleware.Stack, notAuth *middleware.Stack, uu user.Usecase, su session.Usecase, sm sessionHandler.Middleware, socketPool *pool.Pool) {
 	handler := &WSHandler{
 		userUcase:    uu,
 		sessionUcase: su,
 		sessionMid:   sm,
+		socketPool:   socketPool,
 	}
+
+	socketPool.CreateRoom("auth")
 
 	r.HandleMethod("authenticate", notAuth.Wrap(handler.Authenticate))
 	r.HandleMethod("test", admin.Wrap(handler.Test))
@@ -50,8 +55,15 @@ func (w *WSHandler) Authenticate(ctx context.Context, s *gows.Socket, r *router.
 		return
 	}
 	w.sessionMid.SetSession(s, ss)
+	w.socketPool.JoinRoom(s, "auth")
 
-	router.WriteRes(s, &r.Method, nil)
+	w.socketPool.EmitRoom("auth", &router.Response{
+		Err:    nil,
+		Method: &r.Method,
+		Params: router.Params{
+			"uuid": s.GetUUID(),
+		},
+	})
 }
 
 func (w *WSHandler) Test(ctx context.Context, s *gows.Socket, r *router.Request) {
