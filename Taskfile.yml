@@ -3,6 +3,7 @@ version: '3'
 vars:
   # Docker Compose
   COMPOSE_DIR: .docker/compose
+  DBMATE_DIR: .db/migrations
 
 silent: true
 
@@ -20,3 +21,13 @@ tasks:
     cmds:
       - task: compose-stop
       - docker-compose up -d
+
+  db-dump:
+    desc: Dumps DB schema
+    cmds:
+      - dbmate -d {{ .DBMATE_DIR }} dump
+
+  db-migrate:
+    desc: Migrates DB schema
+    cmds:
+      - dbmate -d {{ .DBMATE_DIR }} up
