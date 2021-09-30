@@ -157,27 +157,9 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 -- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.roles (id, role) FROM stdin;
-1	User
-2	Support agent
-3	Administrator
-\.
-
-
---
--- Data for Name: sessions; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.sessions (id, user_id, expiration) FROM stdin;
-\.
-
-
---
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.users (id, email, password, balance, role_id) FROM stdin;
-\.
+INSERT INTO public.roles VALUES (1, 'User');
+INSERT INTO public.roles VALUES (2, 'Support agent');
+INSERT INTO public.roles VALUES (3, 'Administrator');
 
 
 --
