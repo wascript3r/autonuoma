@@ -1,13 +1,6 @@
 -- migrate:up
 
 
---
--- PostgreSQL database dump
---
-
--- Dumped from database version 12.1 (Debian 12.1-1.pgdg100+1)
--- Dumped by pg_dump version 12.8
-
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -18,6 +11,8 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
@@ -52,6 +47,15 @@ ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
 
 
 --
+-- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.schema_migrations (
+    version character varying(255) NOT NULL
+);
+
+
+--
 -- Name: sessions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -63,6 +67,38 @@ CREATE TABLE public.sessions (
 
 
 --
+-- Name: tickets; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tickets (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    agent_id integer,
+    ended boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: tickets_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.tickets_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: tickets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.tickets_id_seq OWNED BY public.tickets.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -71,7 +107,8 @@ CREATE TABLE public.users (
     email character varying(200) NOT NULL,
     password character varying(70) NOT NULL,
     balance bigint DEFAULT 0 NOT NULL,
-    role_id integer DEFAULT 1 NOT NULL
+    role_id integer DEFAULT 1 NOT NULL,
+    current_ticket_id integer
 );
 
 
@@ -100,6 +137,13 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 --
 
 ALTER TABLE ONLY public.roles ALTER COLUMN id SET DEFAULT nextval('public.roles_id_seq'::regclass);
+
+
+--
+-- Name: tickets id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tickets ALTER COLUMN id SET DEFAULT nextval('public.tickets_id_seq'::regclass);
 
 
 --
@@ -152,11 +196,27 @@ ALTER TABLE ONLY public.roles
 
 
 --
+-- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.schema_migrations
+    ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
 -- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.sessions
     ADD CONSTRAINT sessions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tickets tickets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tickets
+    ADD CONSTRAINT tickets_pkey PRIMARY KEY (id);
 
 
 --
@@ -191,10 +251,31 @@ CREATE INDEX fki_sessions_fkey ON public.sessions USING btree (user_id);
 
 
 --
--- Name: fki_users_fkey; Type: INDEX; Schema: public; Owner: -
+-- Name: fki_tickets_agent_fkey; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX fki_users_fkey ON public.users USING btree (role_id);
+CREATE INDEX fki_tickets_agent_fkey ON public.tickets USING btree (agent_id);
+
+
+--
+-- Name: fki_tickets_user_fkey; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX fki_tickets_user_fkey ON public.tickets USING btree (user_id);
+
+
+--
+-- Name: fki_users_role_fkey; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX fki_users_role_fkey ON public.users USING btree (role_id);
+
+
+--
+-- Name: fki_users_ticket_fkey; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX fki_users_ticket_fkey ON public.users USING btree (current_ticket_id);
 
 
 --
@@ -206,11 +287,35 @@ ALTER TABLE ONLY public.sessions
 
 
 --
--- Name: users users_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: tickets tickets_agent_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tickets
+    ADD CONSTRAINT tickets_agent_fkey FOREIGN KEY (agent_id) REFERENCES public.users(id) NOT VALID;
+
+
+--
+-- Name: tickets tickets_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tickets
+    ADD CONSTRAINT tickets_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) NOT VALID;
+
+
+--
+-- Name: users users_role_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) NOT VALID;
+    ADD CONSTRAINT users_role_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) NOT VALID;
+
+
+--
+-- Name: users users_ticket_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_ticket_fkey FOREIGN KEY (current_ticket_id) REFERENCES public.tickets(id) NOT VALID;
 
 
 --
