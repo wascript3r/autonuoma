@@ -23,4 +23,9 @@ var (
 		"invalid_credentials",
 		errors.New("invalid credentials"),
 	)
+
+	TicketStillActiveError = errcode.New(
+		"current_ticket_still_active",
+		errors.New("current ticket is still active"),
+	)
 )

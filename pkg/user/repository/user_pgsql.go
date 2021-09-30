@@ -10,11 +10,16 @@ import (
 )
 
 const (
-	insertIfNotExistsSQL = "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id"
-	emailExistsSQL       = "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"
-	getIDAndPasswordSQL  = "SELECT id, password FROM users WHERE email = $1"
-	deductBalanceSQL     = "UPDATE users SET balance = balance - $2 WHERE id = $1"
-	addBalanceSQL        = "UPDATE users SET balance = balance + $2 WHERE id = $1"
+	insertIfNotExistsSQL          = "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id"
+	emailExistsSQL                = "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"
+	getIDAndPasswordSQL           = "SELECT id, password FROM users WHERE email = $1"
+	deductBalanceSQL              = "UPDATE users SET balance = balance - $2 WHERE id = $1"
+	addBalanceSQL                 = "UPDATE users SET balance = balance + $2 WHERE id = $1"
+	getCurrTicketIDSQL            = "SELECT current_ticket_id FROM users WHERE id = $1"
+	getCurrTicketIDForUpdateSQL   = getCurrTicketIDSQL + " FOR UPDATE"
+	isCurrTicketEndedSQL          = "SELECT t.ended FROM users u LEFT JOIN tickets t ON (t.id = u.current_ticket_id) WHERE u.id = $1"
+	isCurrTicketEndedForUpdateSQL = isCurrTicketEndedSQL + " FOR UPDATE OF u"
+	setCurrTicketSQL              = "UPDATE users SET current_ticket_id = $2 WHERE id = $1"
 )
 
 type PgRepo struct {
@@ -128,6 +133,120 @@ func (p *PgRepo) AddBalanceTx(ctx context.Context, tx repository.Transaction, id
 	}
 
 	err := p.addBalance(ctx, sqlTx, id, value)
+	if err != nil {
+		sqlTx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
+func (p *PgRepo) getCurrTicketID(ctx context.Context, q pgsql.Querier, userID int, forUpdate bool) (int, error) {
+	var (
+		ticketID *int
+		query    string
+	)
+
+	if forUpdate {
+		query = getCurrTicketIDForUpdateSQL
+	} else {
+		query = getCurrTicketIDSQL
+	}
+
+	err := q.QueryRowContext(ctx, query, userID).Scan(&ticketID)
+	if err != nil {
+		return 0, err
+	}
+
+	if ticketID == nil {
+		return 0, domain.ErrNullValue
+	}
+
+	return *ticketID, nil
+}
+
+func (p *PgRepo) GetCurrTicketID(ctx context.Context, userID int) (int, error) {
+	return p.getCurrTicketID(ctx, p.conn, userID, false)
+}
+
+func (p *PgRepo) GetCurrTicketIDTx(ctx context.Context, tx repository.Transaction, userID int) (int, error) {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return 0, repository.ErrTxMismatch
+	}
+
+	ticketID, err := p.getCurrTicketID(ctx, sqlTx, userID, true)
+	if err != nil {
+		if err != domain.ErrNullValue {
+			sqlTx.Rollback()
+		}
+		return 0, err
+	}
+
+	return ticketID, nil
+}
+
+func (p *PgRepo) isCurrTicketEnded(ctx context.Context, q pgsql.Querier, userID int, forUpdate bool) (bool, error) {
+	var (
+		ended *bool
+		query string
+	)
+
+	if forUpdate {
+		query = isCurrTicketEndedForUpdateSQL
+	} else {
+		query = isCurrTicketEndedSQL
+	}
+
+	err := q.QueryRowContext(ctx, query, userID).Scan(&ended)
+	if err != nil {
+		return false, err
+	}
+
+	if ended == nil {
+		return false, domain.ErrNullValue
+	}
+
+	return *ended, nil
+}
+
+func (p *PgRepo) IsCurrTicketEnded(ctx context.Context, userID int) (bool, error) {
+	return p.isCurrTicketEnded(ctx, p.conn, userID, false)
+}
+
+func (p *PgRepo) IsCurrTicketEndedTx(ctx context.Context, tx repository.Transaction, userID int) (bool, error) {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return false, repository.ErrTxMismatch
+	}
+
+	ended, err := p.isCurrTicketEnded(ctx, sqlTx, userID, true)
+	if err != nil {
+		if err != domain.ErrNullValue {
+			sqlTx.Rollback()
+		}
+		return false, err
+	}
+
+	return ended, nil
+}
+
+func (p *PgRepo) setCurrTicket(ctx context.Context, q pgsql.Querier, userID, ticketID int) error {
+	_, err := q.ExecContext(ctx, setCurrTicketSQL, userID, ticketID)
+	return err
+}
+
+func (p *PgRepo) SetCurrTicket(ctx context.Context, userID, ticketID int) error {
+	return p.setCurrTicket(ctx, p.conn, userID, ticketID)
+}
+
+func (p *PgRepo) SetCurrTicketTx(ctx context.Context, tx repository.Transaction, userID, ticketID int) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return repository.ErrTxMismatch
+	}
+
+	err := p.setCurrTicket(ctx, sqlTx, userID, ticketID)
 	if err != nil {
 		sqlTx.Rollback()
 		return err

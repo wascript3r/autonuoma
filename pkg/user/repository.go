@@ -19,4 +19,13 @@ type Repository interface {
 
 	AddBalance(ctx context.Context, id int, value int64) error
 	AddBalanceTx(ctx context.Context, tx repository.Transaction, id int, value int64) error
+
+	GetCurrTicketID(ctx context.Context, userID int) (int, error)
+	GetCurrTicketIDTx(ctx context.Context, tx repository.Transaction, userID int) (int, error)
+
+	IsCurrTicketEnded(ctx context.Context, userID int) (bool, error)
+	IsCurrTicketEndedTx(ctx context.Context, tx repository.Transaction, userID int) (bool, error)
+
+	SetCurrTicket(ctx context.Context, userID, ticketID int) error
+	SetCurrTicketTx(ctx context.Context, tx repository.Transaction, userID, ticketID int) error
 }

@@ -14,3 +14,8 @@ type User struct {
 	Password string
 	RoleID   Role
 }
+
+type UserMeta struct {
+	ID    int
+	Email string
+}
