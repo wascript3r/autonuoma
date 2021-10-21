@@ -13,7 +13,7 @@ const (
 	insertSQL                     = "INSERT INTO tickets (user_id) VALUES ($1) RETURNING id"
 	getCurrTicketIDSQL            = "SELECT id FROM tickets WHERE user_id = $1 ORDER BY id DESC LIMIT 1"
 	getCurrTicketIDForUpdateSQL   = getCurrTicketIDSQL + " FOR UPDATE"
-	isCurrTicketEndedSQL          = "SELECT ended FROM tickets WHERE user_id = $1 ORDER BY id DESC LIMIT 1"
+	isCurrTicketEndedSQL          = "SELECT CASE WHEN ended IS NULL THEN false ELSE true END AS ended_b FROM tickets WHERE user_id = $1 ORDER BY id DESC LIMIT 1"
 	isCurrTicketEndedForUpdateSQL = isCurrTicketEndedSQL + " FOR UPDATE"
 )
 
