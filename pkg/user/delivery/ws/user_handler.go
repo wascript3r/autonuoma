@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	AuthenticatedRoom pool.Room = "auth"
+	AuthenticatedRoom = pool.NewRoom("auth", true)
 )
 
 type WSHandler struct {
@@ -61,7 +61,7 @@ func (w *WSHandler) Authenticate(ctx context.Context, s *gows.Socket, r *router.
 	w.sessionMid.SetSession(s, ss)
 	w.socketPool.JoinRoom(s, AuthenticatedRoom)
 
-	w.socketPool.EmitRoom("auth", &router.Response{
+	w.socketPool.EmitRoom(AuthenticatedRoom, &router.Response{
 		Err:    nil,
 		Method: &r.Method,
 		Params: router.Params{
