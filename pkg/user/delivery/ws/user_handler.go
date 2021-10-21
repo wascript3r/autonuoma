@@ -14,6 +14,10 @@ import (
 	"github.com/wascript3r/gows/router"
 )
 
+var (
+	AuthenticatedRoom pool.Room = "auth"
+)
+
 type WSHandler struct {
 	userUcase    user.Usecase
 	sessionUcase session.Usecase
@@ -29,10 +33,10 @@ func NewWSHandler(r *router.Router, admin *middleware.Stack, notAuth *middleware
 		socketPool:   socketPool,
 	}
 
-	socketPool.CreateRoom("auth")
+	socketPool.CreateRoom(AuthenticatedRoom)
 
-	r.HandleMethod("authenticate", notAuth.Wrap(handler.Authenticate))
-	r.HandleMethod("test", admin.Wrap(handler.Test))
+	r.HandleMethod("user/authenticate", notAuth.Wrap(handler.Authenticate))
+	r.HandleMethod("user/test", admin.Wrap(handler.Test))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -55,7 +59,7 @@ func (w *WSHandler) Authenticate(ctx context.Context, s *gows.Socket, r *router.
 		return
 	}
 	w.sessionMid.SetSession(s, ss)
-	w.socketPool.JoinRoom(s, "auth")
+	w.socketPool.JoinRoom(s, AuthenticatedRoom)
 
 	w.socketPool.EmitRoom("auth", &router.Response{
 		Err:    nil,

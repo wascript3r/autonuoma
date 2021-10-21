@@ -40,8 +40,8 @@ func (u *Usecase) Create(ctx context.Context, userID int, req *ticket.CreateReq)
 		return err
 	}
 
-	ended, err := u.userRepo.IsCurrTicketEndedTx(c, tx, userID)
-	if err != domain.ErrNullValue {
+	ended, err := u.ticketRepo.IsCurrTicketEndedTx(c, tx, userID)
+	if err != domain.ErrNotFound {
 		if err != nil {
 			return err
 		}
@@ -56,11 +56,6 @@ func (u *Usecase) Create(ctx context.Context, userID int, req *ticket.CreateReq)
 	}
 
 	err = u.ticketRepo.InsertTx(ctx, tx, t)
-	if err != nil {
-		return err
-	}
-
-	err = u.userRepo.SetCurrTicketTx(c, tx, userID, t.ID)
 	if err != nil {
 		return err
 	}

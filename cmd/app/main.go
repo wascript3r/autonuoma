@@ -34,6 +34,14 @@ import (
 	_sessionRepo "github.com/wascript3r/autonuoma/pkg/session/repository"
 	_sessionUcase "github.com/wascript3r/autonuoma/pkg/session/usecase"
 
+	// Ticket
+
+	_ticketWsHandler "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws"
+	_ticketWsMid "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws/middleware"
+	_ticketRepo "github.com/wascript3r/autonuoma/pkg/ticket/repository"
+	_ticketUcase "github.com/wascript3r/autonuoma/pkg/ticket/usecase"
+	_ticketValidator "github.com/wascript3r/autonuoma/pkg/ticket/validator"
+
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/gocipher/aes"
 	"github.com/wascript3r/gopool"
@@ -149,6 +157,17 @@ func main() {
 		userValidator,
 	)
 
+	// Ticket
+	ticketRepo := _ticketRepo.NewPgRepo(dbConn)
+	ticketValidator := _ticketValidator.New()
+	ticketUcase := _ticketUcase.New(
+		ticketRepo,
+		userRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+
+		ticketValidator,
+	)
+
 	// WS
 	wsEventBus := eventbus.NewWsEventBus(wsPool, logger)
 
@@ -178,9 +197,17 @@ func main() {
 	notAuthWsStack := wsMiddleware.New()
 	notAuthWsStack.Use(sessionWsMid.NotAuthenticated)
 
+	clientWsStack := wsMiddleware.New()
+	clientWsStack.Use(sessionWsMid.HasRole(domain.UserRole))
+
 	adminWsStack := wsMiddleware.New()
 	adminWsStack.Use(sessionWsMid.HasRole(domain.AdminRole))
 	adminWsStack.Use(wsLog)
+
+	ticketWsMid := _ticketWsMid.NewWSMiddleware(
+		_ticketWsMid.DefaultRoomKey,
+		ticketUcase,
+	)
 
 	// App context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -198,6 +225,15 @@ func main() {
 		userUcase,
 		sessionUcase,
 		sessionWsMid,
+		socketPool,
+	)
+	_ticketWsHandler.NewWSHandler(
+		wsRouter,
+		clientWsStack,
+
+		ticketUcase,
+		sessionUcase,
+		ticketWsMid,
 		socketPool,
 	)
 
