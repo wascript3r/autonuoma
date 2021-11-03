@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	insertSQL                     = "INSERT INTO tickets (user_id) VALUES ($1) RETURNING id"
-	getCurrTicketIDSQL            = "SELECT id FROM tickets WHERE user_id = $1 ORDER BY id DESC LIMIT 1"
+	insertSQL                     = "INSERT INTO užklausos (fk_klientas, fk_klientų_aptarnavimo_specialistas, sukurta, užbaigta) VALUES ($1, $2, $3, $4) RETURNING id"
+	getCurrTicketIDSQL            = "SELECT id FROM užklausos WHERE fk_klientas = $1 ORDER BY id DESC LIMIT 1"
 	getCurrTicketIDForUpdateSQL   = getCurrTicketIDSQL + " FOR UPDATE"
-	isCurrTicketEndedSQL          = "SELECT CASE WHEN ended IS NULL THEN false ELSE true END AS ended_b FROM tickets WHERE user_id = $1 ORDER BY id DESC LIMIT 1"
+	isCurrTicketEndedSQL          = "SELECT CASE WHEN užbaigta IS NULL THEN false ELSE true END AS užbaigta_b FROM užklausos WHERE fk_klientas = $1 ORDER BY id DESC LIMIT 1"
 	isCurrTicketEndedForUpdateSQL = isCurrTicketEndedSQL + " FOR UPDATE"
 )
 
@@ -30,7 +30,7 @@ func (p *PgRepo) NewTx(ctx context.Context) (repository.Transaction, error) {
 }
 
 func (p *PgRepo) insert(ctx context.Context, q pgsql.Querier, ts *domain.Ticket) error {
-	return q.QueryRowContext(ctx, insertSQL, ts.UserID).Scan(&ts.ID)
+	return q.QueryRowContext(ctx, insertSQL, ts.ClientID, ts.AgentID, ts.Created, ts.Ended).Scan(&ts.ID)
 }
 
 func (p *PgRepo) Insert(ctx context.Context, ts *domain.Ticket) error {

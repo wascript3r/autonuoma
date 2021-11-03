@@ -52,7 +52,10 @@ func (u *Usecase) Create(ctx context.Context, userID int, req *ticket.CreateReq)
 	}
 
 	t := &domain.Ticket{
-		UserID: userID,
+		ClientID: userID,
+		AgentID:  nil,
+		Created:  time.Now(),
+		Ended:    nil,
 	}
 
 	err = u.ticketRepo.InsertTx(ctx, tx, t)
