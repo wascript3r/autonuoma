@@ -10,7 +10,9 @@ import (
 )
 
 const (
-	insertSQL                         = "INSERT INTO užklausos (fk_klientas, fk_klientų_aptarnavimo_specialistas, sukurta, užbaigta) VALUES ($1, $2, $3, $4) RETURNING id"
+	insertSQL = "INSERT INTO užklausos (fk_klientas, fk_klientų_aptarnavimo_specialistas, sukurta, užbaigta) VALUES ($1, $2, $3, $4) RETURNING id"
+
+	// TODO: combine those both queries into one
 	getLastActiveTicketIDSQL          = "SELECT id FROM užklausos WHERE fk_klientas = $1 AND užbaigta IS NULL ORDER BY id DESC LIMIT 1"
 	getLastActiveTicketIDForUpdateSQL = getLastActiveTicketIDSQL + " FOR UPDATE"
 	isCurrTicketEndedSQL              = "SELECT CASE WHEN užbaigta IS NULL THEN false ELSE true END AS užbaigta_b FROM užklausos WHERE fk_klientas = $1 ORDER BY id DESC LIMIT 1"
