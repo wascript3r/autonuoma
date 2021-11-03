@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type Role int8
 
 const (
@@ -9,10 +11,15 @@ const (
 )
 
 type User struct {
-	ID       int
-	Email    string
-	Password string
-	RoleID   Role
+	ID        int
+	Email     string
+	Password  string
+	FirstName string
+	LastName  string
+	BirthDate time.Time
+	Balance   int64
+	PIN       string
+	RoleID    Role
 }
 
 type UserMeta struct {

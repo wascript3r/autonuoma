@@ -51,8 +51,14 @@ func (u *Usecase) Create(ctx context.Context, req *user.CreateReq) error {
 	}
 
 	us := &domain.User{
-		Email:    req.Email,
-		Password: hash,
+		Email:     req.Email,
+		Password:  hash,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		BirthDate: time.Time(req.BirthDate),
+		Balance:   0,
+		PIN:       req.PIN,
+		RoleID:    domain.UserRole,
 	}
 
 	err = u.userRepo.InsertIfNotExists(c, us)
@@ -92,7 +98,7 @@ func (u *Usecase) GetTempToken(ss *domain.Session) (*user.TempToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &user.TempToken{token}, nil
+	return &user.TempToken{Token: token}, nil
 }
 
 func (u *Usecase) AuthenticateToken(ctx context.Context, req *user.TempToken) (*domain.Session, error) {
