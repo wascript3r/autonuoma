@@ -5,7 +5,7 @@ import "time"
 type Message struct {
 	ID       int
 	TicketID int
-	Sender   *UserMeta
+	UserID   int
 	Content  string
 	Time     time.Time
 }

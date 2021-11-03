@@ -13,9 +13,9 @@ type Repository interface {
 	Insert(ctx context.Context, ts *domain.Ticket) error
 	InsertTx(ctx context.Context, tx repository.Transaction, ts *domain.Ticket) error
 
-	GetCurrTicketID(ctx context.Context, clientID int) (int, error)
-	GetCurrTicketIDTx(ctx context.Context, tx repository.Transaction, clientID int) (int, error)
+	GetLastActiveTicketID(ctx context.Context, clientID int) (int, error)
+	GetLastActiveTicketIDTx(ctx context.Context, tx repository.Transaction, clientID int) (int, error)
 
-	IsCurrTicketEnded(ctx context.Context, clientID int) (bool, error)
-	IsCurrTicketEndedTx(ctx context.Context, tx repository.Transaction, clientID int) (bool, error)
+	IsLastTicketEnded(ctx context.Context, clientID int) (bool, error)
+	IsLastTicketEndedTx(ctx context.Context, tx repository.Transaction, clientID int) (bool, error)
 }

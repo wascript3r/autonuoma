@@ -5,23 +5,23 @@ import (
 	"time"
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
+	"github.com/wascript3r/autonuoma/pkg/message"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
-	"github.com/wascript3r/autonuoma/pkg/user"
 )
 
 type Usecase struct {
-	ticketRepo ticket.Repository
-	userRepo   user.Repository
-	ctxTimeout time.Duration
+	ticketRepo  ticket.Repository
+	messageRepo message.Repository
+	ctxTimeout  time.Duration
 
 	validate ticket.Validate
 }
 
-func New(tr ticket.Repository, ur user.Repository, t time.Duration, v ticket.Validate) *Usecase {
+func New(tr ticket.Repository, mr message.Repository, t time.Duration, v ticket.Validate) *Usecase {
 	return &Usecase{
-		ticketRepo: tr,
-		userRepo:   ur,
-		ctxTimeout: t,
+		ticketRepo:  tr,
+		messageRepo: mr,
+		ctxTimeout:  t,
 
 		validate: v,
 	}
@@ -35,19 +35,19 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
 	defer cancel()
 
-	tx, err := u.userRepo.NewTx(c)
+	tx, err := u.ticketRepo.NewTx(c)
 	if err != nil {
 		return 0, err
 	}
 
-	ended, err := u.ticketRepo.IsCurrTicketEndedTx(c, tx, clientID)
+	ended, err := u.ticketRepo.IsLastTicketEndedTx(c, tx, clientID)
 	if err != domain.ErrNotFound {
 		if err != nil {
 			return 0, err
 		}
 
 		if !ended {
-			return 0, user.TicketStillActiveError
+			return 0, ticket.TicketStillActiveError
 		}
 	}
 
@@ -59,6 +59,18 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 	}
 
 	err = u.ticketRepo.InsertTx(ctx, tx, t)
+	if err != nil {
+		return 0, err
+	}
+
+	m := &domain.Message{
+		TicketID: t.ID,
+		UserID:   clientID,
+		Content:  req.Message,
+		Time:     time.Time{},
+	}
+
+	err = u.messageRepo.InsertTx(ctx, tx, m)
 	if err != nil {
 		return 0, err
 	}
