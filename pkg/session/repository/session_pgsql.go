@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	insertSQL = "INSERT INTO sessions (id, user_id, expiration) VALUES ($1, $2, $3)"
-	getSQL    = "SELECT s.*, u.role_id FROM sessions s INNER JOIN users u ON u.id = s.user_id INNER JOIN roles r ON r.id = u.role_id WHERE s.id = $1"
-	deleteSQL = "DELETE FROM sessions WHERE id = $1"
+	insertSQL = "INSERT INTO sesijos (id, fk_vartotojas, galiojimo_pabaiga) VALUES ($1, $2, $3)"
+	getSQL    = "SELECT s.id, s.fk_vartotojas, s.galiojimo_pabaiga, v.rolė FROM sesijos s INNER JOIN vartotojai v ON v.id = s.fk_vartotojas INNER JOIN rolės r ON r.id = v.rolė WHERE s.id = $1"
+	deleteSQL = "DELETE FROM sesijos WHERE id = $1"
 )
 
 type PgRepo struct {

@@ -34,8 +34,13 @@ import (
 	_sessionRepo "github.com/wascript3r/autonuoma/pkg/session/repository"
 	_sessionUcase "github.com/wascript3r/autonuoma/pkg/session/usecase"
 
-	// Ticket
+	// Message
+	_messageWsHandler "github.com/wascript3r/autonuoma/pkg/message/delivery/ws"
+	_messageRepo "github.com/wascript3r/autonuoma/pkg/message/repository"
+	_messageUcase "github.com/wascript3r/autonuoma/pkg/message/usecase"
+	_messageValidator "github.com/wascript3r/autonuoma/pkg/message/validator"
 
+	// Ticket
 	_ticketWsHandler "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws"
 	_ticketWsMid "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws/middleware"
 	_ticketRepo "github.com/wascript3r/autonuoma/pkg/ticket/repository"
@@ -157,12 +162,25 @@ func main() {
 		userValidator,
 	)
 
-	// Ticket
+	// Message, Ticket
+	messageRepo := _messageRepo.NewPgRepo(dbConn)
 	ticketRepo := _ticketRepo.NewPgRepo(dbConn)
-	ticketValidator := _ticketValidator.New()
+
+	// Message
+	messageValidator := _messageValidator.New()
+	messageUcase := _messageUcase.New(
+		messageRepo,
+		ticketRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+
+		messageValidator,
+	)
+
+	// Ticket
+	ticketValidator := _ticketValidator.New(messageValidator)
 	ticketUcase := _ticketUcase.New(
 		ticketRepo,
-		userRepo,
+		messageRepo,
 		Cfg.Database.Postgres.QueryTimeout.Duration,
 
 		ticketValidator,
@@ -225,6 +243,14 @@ func main() {
 		userUcase,
 		sessionUcase,
 		sessionWsMid,
+		socketPool,
+	)
+	_messageWsHandler.NewWSHandler(
+		wsRouter,
+		clientWsStack,
+
+		messageUcase,
+		sessionUcase,
 		socketPool,
 	)
 	_ticketWsHandler.NewWSHandler(

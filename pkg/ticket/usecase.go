@@ -5,5 +5,5 @@ import (
 )
 
 type Usecase interface {
-	Create(ctx context.Context, userID int, req *CreateReq) error
+	Create(ctx context.Context, clientID int, req *CreateReq) (int, error)
 }

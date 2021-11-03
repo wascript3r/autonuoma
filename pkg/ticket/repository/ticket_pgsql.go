@@ -10,11 +10,13 @@ import (
 )
 
 const (
-	insertSQL                     = "INSERT INTO tickets (user_id) VALUES ($1) RETURNING id"
-	getCurrTicketIDSQL            = "SELECT id FROM tickets WHERE user_id = $1 ORDER BY id DESC LIMIT 1"
-	getCurrTicketIDForUpdateSQL   = getCurrTicketIDSQL + " FOR UPDATE"
-	isCurrTicketEndedSQL          = "SELECT ended FROM tickets WHERE user_id = $1 ORDER BY id DESC LIMIT 1"
-	isCurrTicketEndedForUpdateSQL = isCurrTicketEndedSQL + " FOR UPDATE"
+	insertSQL = "INSERT INTO užklausos (fk_klientas, fk_klientų_aptarnavimo_specialistas, sukurta, užbaigta) VALUES ($1, $2, $3, $4) RETURNING id"
+
+	// TODO: combine those both queries into one
+	getLastActiveTicketIDSQL          = "SELECT id FROM užklausos WHERE fk_klientas = $1 AND užbaigta IS NULL ORDER BY id DESC LIMIT 1"
+	getLastActiveTicketIDForUpdateSQL = getLastActiveTicketIDSQL + " FOR UPDATE"
+	isCurrTicketEndedSQL              = "SELECT CASE WHEN užbaigta IS NULL THEN false ELSE true END AS užbaigta_b FROM užklausos WHERE fk_klientas = $1 ORDER BY id DESC LIMIT 1"
+	isCurrTicketEndedForUpdateSQL     = isCurrTicketEndedSQL + " FOR UPDATE"
 )
 
 type PgRepo struct {
@@ -30,7 +32,7 @@ func (p *PgRepo) NewTx(ctx context.Context) (repository.Transaction, error) {
 }
 
 func (p *PgRepo) insert(ctx context.Context, q pgsql.Querier, ts *domain.Ticket) error {
-	return q.QueryRowContext(ctx, insertSQL, ts.UserID).Scan(&ts.ID)
+	return q.QueryRowContext(ctx, insertSQL, ts.ClientID, ts.AgentID, ts.Created, ts.Ended).Scan(&ts.ID)
 }
 
 func (p *PgRepo) Insert(ctx context.Context, ts *domain.Ticket) error {
@@ -52,19 +54,19 @@ func (p *PgRepo) InsertTx(ctx context.Context, tx repository.Transaction, ts *do
 	return nil
 }
 
-func (p *PgRepo) getCurrTicketID(ctx context.Context, q pgsql.Querier, userID int, forUpdate bool) (int, error) {
+func (p *PgRepo) getLastActiveTicketID(ctx context.Context, q pgsql.Querier, clientID int, forUpdate bool) (int, error) {
 	var (
 		ticketID int
 		query    string
 	)
 
 	if forUpdate {
-		query = getCurrTicketIDForUpdateSQL
+		query = getLastActiveTicketIDForUpdateSQL
 	} else {
-		query = getCurrTicketIDSQL
+		query = getLastActiveTicketIDSQL
 	}
 
-	err := q.QueryRowContext(ctx, query, userID).Scan(&ticketID)
+	err := q.QueryRowContext(ctx, query, clientID).Scan(&ticketID)
 	if err != nil {
 		return 0, pgsql.ParseSQLError(err)
 	}
@@ -72,17 +74,17 @@ func (p *PgRepo) getCurrTicketID(ctx context.Context, q pgsql.Querier, userID in
 	return ticketID, nil
 }
 
-func (p *PgRepo) GetCurrTicketID(ctx context.Context, userID int) (int, error) {
-	return p.getCurrTicketID(ctx, p.conn, userID, false)
+func (p *PgRepo) GetLastActiveTicketID(ctx context.Context, clientID int) (int, error) {
+	return p.getLastActiveTicketID(ctx, p.conn, clientID, false)
 }
 
-func (p *PgRepo) GetCurrTicketIDTx(ctx context.Context, tx repository.Transaction, userID int) (int, error) {
+func (p *PgRepo) GetLastActiveTicketIDTx(ctx context.Context, tx repository.Transaction, clientID int) (int, error) {
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
 		return 0, repository.ErrTxMismatch
 	}
 
-	ticketID, err := p.getCurrTicketID(ctx, sqlTx, userID, true)
+	ticketID, err := p.getLastActiveTicketID(ctx, sqlTx, clientID, true)
 	if err != nil {
 		if err != domain.ErrNotFound {
 			sqlTx.Rollback()
@@ -93,7 +95,7 @@ func (p *PgRepo) GetCurrTicketIDTx(ctx context.Context, tx repository.Transactio
 	return ticketID, nil
 }
 
-func (p *PgRepo) isCurrTicketEnded(ctx context.Context, q pgsql.Querier, userID int, forUpdate bool) (bool, error) {
+func (p *PgRepo) isCurrTicketEnded(ctx context.Context, q pgsql.Querier, clientID int, forUpdate bool) (bool, error) {
 	var (
 		ended bool
 		query string
@@ -105,7 +107,7 @@ func (p *PgRepo) isCurrTicketEnded(ctx context.Context, q pgsql.Querier, userID 
 		query = isCurrTicketEndedSQL
 	}
 
-	err := q.QueryRowContext(ctx, query, userID).Scan(&ended)
+	err := q.QueryRowContext(ctx, query, clientID).Scan(&ended)
 	if err != nil {
 		return false, pgsql.ParseSQLError(err)
 	}
@@ -113,17 +115,17 @@ func (p *PgRepo) isCurrTicketEnded(ctx context.Context, q pgsql.Querier, userID 
 	return ended, nil
 }
 
-func (p *PgRepo) IsCurrTicketEnded(ctx context.Context, userID int) (bool, error) {
-	return p.isCurrTicketEnded(ctx, p.conn, userID, false)
+func (p *PgRepo) IsLastTicketEnded(ctx context.Context, clientID int) (bool, error) {
+	return p.isCurrTicketEnded(ctx, p.conn, clientID, false)
 }
 
-func (p *PgRepo) IsCurrTicketEndedTx(ctx context.Context, tx repository.Transaction, userID int) (bool, error) {
+func (p *PgRepo) IsLastTicketEndedTx(ctx context.Context, tx repository.Transaction, clientID int) (bool, error) {
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
 		return false, repository.ErrTxMismatch
 	}
 
-	ended, err := p.isCurrTicketEnded(ctx, sqlTx, userID, true)
+	ended, err := p.isCurrTicketEnded(ctx, sqlTx, clientID, true)
 	if err != nil {
 		if err != domain.ErrNotFound {
 			sqlTx.Rollback()

@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/wascript3r/autonuoma/pkg/message"
 	"github.com/wascript3r/autonuoma/pkg/session"
-	"github.com/wascript3r/autonuoma/pkg/ticket"
 	"github.com/wascript3r/autonuoma/pkg/user"
 	"github.com/wascript3r/cryptopay/pkg/errcode"
 	"github.com/wascript3r/gows"
@@ -15,21 +15,19 @@ import (
 )
 
 type WSHandler struct {
-	ticketUcase  ticket.Usecase
+	messageUcase message.Usecase
 	sessionUcase session.Usecase
-	ticketMid    Middleware
 	socketPool   *pool.Pool
 }
 
-func NewWSHandler(r *router.Router, client *middleware.Stack, tu ticket.Usecase, su session.Usecase, tm Middleware, socketPool *pool.Pool) {
+func NewWSHandler(r *router.Router, client *middleware.Stack, mu message.Usecase, su session.Usecase, socketPool *pool.Pool) {
 	handler := &WSHandler{
-		ticketUcase:  tu,
+		messageUcase: mu,
 		sessionUcase: su,
-		ticketMid:    tm,
 		socketPool:   socketPool,
 	}
 
-	r.HandleMethod("ticket/new", client.Wrap(handler.NewTicket))
+	r.HandleMethod("ticket/client/message/new", client.Wrap(handler.NewClientMessage))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -37,14 +35,14 @@ func serveError(s *gows.Socket, r *router.Request, err error) {
 	router.WriteErr(s, code, &r.Method)
 }
 
-func (w *WSHandler) NewTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+func (w *WSHandler) NewClientMessage(ctx context.Context, s *gows.Socket, r *router.Request) {
 	ss, err := w.sessionUcase.LoadCtx(ctx)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
-	req := &ticket.CreateReq{}
+	req := &message.ClientSendReq{}
 
 	err = json.Unmarshal(r.Params, req)
 	if err != nil {
@@ -52,11 +50,11 @@ func (w *WSHandler) NewTicket(ctx context.Context, s *gows.Socket, r *router.Req
 		return
 	}
 
-	tID, err := w.ticketUcase.Create(ctx, ss.UserID, req)
+	_, err = w.messageUcase.ClientSend(ctx, ss.UserID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
-	router.WriteRes(s, &r.Method, tID)
+	router.WriteRes(s, &r.Method, nil)
 }

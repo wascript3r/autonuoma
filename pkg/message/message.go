@@ -1,7 +1,7 @@
-package ticket
+package message
 
-// Create
+// Send
 
-type CreateReq struct {
+type ClientSendReq struct {
 	Message string `json:"message" validate:"required,u_message"`
 }

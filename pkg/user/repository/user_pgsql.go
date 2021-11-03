@@ -10,11 +10,11 @@ import (
 )
 
 const (
-	insertIfNotExistsSQL = "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id"
-	emailExistsSQL       = "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)"
-	getIDAndPasswordSQL  = "SELECT id, password FROM users WHERE email = $1"
-	deductBalanceSQL     = "UPDATE users SET balance = balance - $2 WHERE id = $1"
-	addBalanceSQL        = "UPDATE users SET balance = balance + $2 WHERE id = $1"
+	insertIfNotExistsSQL = "INSERT INTO vartotojai (vardas, pavardė, el_paštas, gimimo_data, slaptažodis, balansas, asmens_kodas, rolė) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"
+	emailExistsSQL       = "SELECT EXISTS(SELECT 1 FROM vartotojai WHERE el_paštas = $1)"
+	getIDAndPasswordSQL  = "SELECT id, slaptažodis FROM vartotojai WHERE el_paštas = $1"
+	deductBalanceSQL     = "UPDATE vartotojai SET balansas = balansas - $2 WHERE id = $1"
+	addBalanceSQL        = "UPDATE vartotojai SET balansas = balansas + $2 WHERE id = $1"
 )
 
 type PgRepo struct {
@@ -34,8 +34,14 @@ func (p *PgRepo) InsertIfNotExists(ctx context.Context, us *domain.User) error {
 		ctx,
 		insertIfNotExistsSQL,
 
+		us.FirstName,
+		us.LastName,
 		us.Email,
+		us.BirthDate,
 		us.Password,
+		us.Balance,
+		us.PIN,
+		us.RoleID,
 	).Scan(&us.ID)
 
 	return pgsql.ParsePgError(err)

@@ -1,308 +1,221 @@
 -- migrate:up
 
 
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
+CREATE TABLE klausimų_kategorijos
+(
+	id serial,
+	name char (22) NOT NULL,
+	PRIMARY KEY(id)
+);
+INSERT INTO klausimų_kategorijos(id, name)VALUES (1, 'mokėjimai');
+INSERT INTO klausimų_kategorijos(id, name)VALUES (2, 'vairuotojo_pažymėjimas');
+INSERT INTO klausimų_kategorijos(id, name)VALUES (3, 'rezervacijos');
+INSERT INTO klausimų_kategorijos(id, name)VALUES (4, 'kita');
 
-SET default_tablespace = '';
+CREATE TABLE kuro_tipai
+(
+	id serial,
+	name char (9) NOT NULL,
+	PRIMARY KEY(id)
+);
+INSERT INTO kuro_tipai(id, name)VALUES (1, 'benzinas');
+INSERT INTO kuro_tipai(id, name)VALUES (2, 'dyzelinas');
+INSERT INTO kuro_tipai(id, name)VALUES (3, 'elektra');
 
-SET default_table_access_method = heap;
+CREATE TABLE mokėjimo_būsenos
+(
+	id serial,
+	name char (11) NOT NULL,
+	PRIMARY KEY(id)
+);
+INSERT INTO mokėjimo_būsenos(id, name)VALUES (1, 'sėkmingas');
+INSERT INTO mokėjimo_būsenos(id, name)VALUES (2, 'atmestas');
+INSERT INTO mokėjimo_būsenos(id, name)VALUES (3, 'neužbaigtas');
 
---
--- Name: roles; Type: TABLE; Schema: public; Owner: -
---
+CREATE TABLE pavarų_dėžės
+(
+	id serial,
+	name char (10) NOT NULL,
+	PRIMARY KEY(id)
+);
+INSERT INTO pavarų_dėžės(id, name) VALUES(1, 'automatinė');
+INSERT INTO pavarų_dėžės(id, name) VALUES(2, 'mechaninė');
 
-CREATE TABLE public.roles (
-    id integer NOT NULL,
-    role character varying(20) NOT NULL
+CREATE TABLE rolės
+(
+	id serial,
+	name char (32) NOT NULL,
+	PRIMARY KEY(id)
+);
+INSERT INTO rolės(id, name) VALUES(1, 'klientas');
+INSERT INTO rolės(id, name) VALUES(2, 'klientų_aptarnavimo_specialistas');
+INSERT INTO rolės(id, name) VALUES(3, 'administratorius');
+
+CREATE TABLE vairuotojo_pažymėjimo_būsenos
+(
+	id serial,
+	name char (12) NOT NULL,
+	PRIMARY KEY(id)
+);
+INSERT INTO vairuotojo_pažymėjimo_būsenos(id, name)VALUES (1, 'pateiktas');
+INSERT INTO vairuotojo_pažymėjimo_būsenos(id, name)VALUES (2, 'patvirtintas');
+INSERT INTO vairuotojo_pažymėjimo_būsenos(id, name)VALUES (3, 'atmestas');
+
+CREATE TABLE automobiliai
+(
+	valstybiniai_numeriai varchar (255),
+	markė varchar (255),
+	modelis varchar (255),
+	spalva varchar (255),
+	pozicijos_platuma decimal,
+	pozicijos_ilguma decimal,
+	minutės_kaina decimal,
+	valandos_kaina decimal,
+	paros_kaina decimal,
+	kilometro_kaina decimal,
+	kondicionierius boolean,
+	usb boolean,
+	bluetooth boolean,
+	navigacija boolean,
+	vaikiška_kėdutė boolean,
+	pašalintas boolean,
+	pavarų_dėžė integer,
+	kuro_tipas integer,
+	id serial,
+	PRIMARY KEY(id),
+	FOREIGN KEY(pavarų_dėžė) REFERENCES pavarų_dėžės (id),
+	FOREIGN KEY(kuro_tipas) REFERENCES kuro_tipai (id)
 );
 
-
---
--- Name: roles_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.roles_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: roles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
-
-
---
--- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.schema_migrations (
-    version character varying(255) NOT NULL
+CREATE TABLE dažniausiai_užduodami_klausimai
+(
+	klausimas varchar (255),
+	atsakymas varchar (255),
+	kategorija integer,
+	id serial,
+	PRIMARY KEY(id),
+	FOREIGN KEY(kategorija) REFERENCES klausimų_kategorijos (id)
 );
 
-
---
--- Name: sessions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.sessions (
-    id character(64) NOT NULL,
-    user_id integer NOT NULL,
-    expiration timestamp with time zone NOT NULL
+CREATE TABLE vartotojai
+(
+	vardas varchar (255),
+	pavardė varchar (255),
+	el_paštas varchar (255),
+	gimimo_data date,
+	slaptažodis varchar (255),
+	balansas integer,
+	asmens_kodas varchar (255),
+	rolė integer,
+	id serial,
+	PRIMARY KEY(id),
+	FOREIGN KEY(rolė) REFERENCES rolės (id)
 );
 
-
---
--- Name: tickets; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.tickets (
-    id integer NOT NULL,
-    user_id integer NOT NULL,
-    agent_id integer,
-    ended boolean DEFAULT false NOT NULL
+CREATE TABLE mokėjimai
+(
+	suma decimal,
+	būsena integer,
+	id serial,
+	fk_Vartotojas integer NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY(būsena) REFERENCES mokėjimo_būsenos (id),
+	CONSTRAINT atlieka FOREIGN KEY(fk_Vartotojas) REFERENCES vartotojai (id)
 );
 
-
---
--- Name: tickets_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.tickets_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: tickets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.tickets_id_seq OWNED BY public.tickets.id;
-
-
---
--- Name: users; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.users (
-    id integer NOT NULL,
-    email character varying(200) NOT NULL,
-    password character varying(70) NOT NULL,
-    balance bigint DEFAULT 0 NOT NULL,
-    role_id integer DEFAULT 1 NOT NULL,
-    current_ticket_id integer
+CREATE TABLE rezervacijos
+(
+	sukurta timestamp with time zone,
+	atšaukta timestamp with time zone,
+	pradzios_adresas varchar (255),
+	pabaigos_adresas varchar (255),
+	id serial,
+	fk_Automobilis integer NOT NULL,
+	fk_Vartotojas integer NOT NULL,
+	PRIMARY KEY(id),
+	CONSTRAINT priklauso FOREIGN KEY(fk_Automobilis) REFERENCES automobiliai (id),
+	CONSTRAINT sukuria FOREIGN KEY(fk_Vartotojas) REFERENCES vartotojai (id)
 );
 
-
---
--- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.users_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
-
-
---
--- Name: roles id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.roles ALTER COLUMN id SET DEFAULT nextval('public.roles_id_seq'::regclass);
-
-
---
--- Name: tickets id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tickets ALTER COLUMN id SET DEFAULT nextval('public.tickets_id_seq'::regclass);
-
-
---
--- Name: users id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
-
-
---
--- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: -
---
-
-INSERT INTO public.roles VALUES (1, 'User');
-INSERT INTO public.roles VALUES (2, 'Support agent');
-INSERT INTO public.roles VALUES (3, 'Administrator');
-
-
---
--- Name: roles_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
---
-
-SELECT pg_catalog.setval('public.roles_id_seq', 3, true);
-
-
---
--- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.roles
-    ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
-
-
---
--- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.schema_migrations
-    ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
-
-
---
--- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sessions
-    ADD CONSTRAINT sessions_pkey PRIMARY KEY (id);
-
-
---
--- Name: tickets tickets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tickets
-    ADD CONSTRAINT tickets_pkey PRIMARY KEY (id);
-
-
---
--- Name: users users_balance_check; Type: CHECK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE public.users
-    ADD CONSTRAINT users_balance_check CHECK ((balance >= 0)) NOT VALID;
-
-
---
--- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_email_key UNIQUE (email);
-
-
---
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-
-
---
--- Name: fki_sessions_fkey; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX fki_sessions_fkey ON public.sessions USING btree (user_id);
-
-
---
--- Name: fki_tickets_agent_fkey; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX fki_tickets_agent_fkey ON public.tickets USING btree (agent_id);
-
-
---
--- Name: fki_tickets_user_fkey; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX fki_tickets_user_fkey ON public.tickets USING btree (user_id);
-
-
---
--- Name: fki_users_role_fkey; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX fki_users_role_fkey ON public.users USING btree (role_id);
-
-
---
--- Name: fki_users_ticket_fkey; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX fki_users_ticket_fkey ON public.users USING btree (current_ticket_id);
-
-
---
--- Name: sessions sessions_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sessions
-    ADD CONSTRAINT sessions_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) NOT VALID;
-
-
---
--- Name: tickets tickets_agent_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tickets
-    ADD CONSTRAINT tickets_agent_fkey FOREIGN KEY (agent_id) REFERENCES public.users(id) NOT VALID;
-
-
---
--- Name: tickets tickets_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tickets
-    ADD CONSTRAINT tickets_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) NOT VALID;
-
-
---
--- Name: users users_role_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_role_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) NOT VALID;
-
-
---
--- Name: users users_ticket_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_ticket_fkey FOREIGN KEY (current_ticket_id) REFERENCES public.tickets(id) NOT VALID;
-
-
---
--- PostgreSQL database dump complete
---
+CREATE TABLE sesijos
+(
+	galiojimo_pabaiga timestamp with time zone,
+	id varchar (255),
+	fk_Vartotojas integer NOT NULL,
+	PRIMARY KEY(id),
+	CONSTRAINT sukuriama FOREIGN KEY(fk_Vartotojas) REFERENCES vartotojai (id)
+);
+
+CREATE TABLE užklausos
+(
+	sukurta timestamp with time zone,
+	užbaigta timestamp with time zone,
+	id serial,
+	fk_klientas integer NOT NULL,
+	fk_klientų_aptarnavimo_specialistas integer,
+	PRIMARY KEY(id),
+	CONSTRAINT sukuria FOREIGN KEY(fk_klientas) REFERENCES vartotojai (id),
+	CONSTRAINT priima FOREIGN KEY(fk_klientų_aptarnavimo_specialistas) REFERENCES vartotojai (id)
+);
+
+CREATE TABLE vairuotojo_pažymėjimai
+(
+	nr varchar (255),
+	galiojimo_pabaiga date,
+	būsena integer,
+	id serial,
+	fk_Vartotojas integer NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY(būsena) REFERENCES vairuotojo_pažymėjimo_būsenos (id),
+	CONSTRAINT prideda FOREIGN KEY(fk_Vartotojas) REFERENCES vartotojai (id)
+);
+
+CREATE TABLE įvertinimai
+(
+	žvaigždutės integer,
+	komentaras varchar (255),
+	data timestamp with time zone,
+	id serial,
+	fk_Uzklausa integer NOT NULL,
+	PRIMARY KEY(id),
+	UNIQUE(fk_Uzklausa),
+	CONSTRAINT paliekamas FOREIGN KEY(fk_Uzklausa) REFERENCES užklausos (id)
+);
+
+CREATE TABLE kelionės
+(
+	pradžios_laikas timestamp with time zone,
+	pabaigos_laikas timestamp with time zone,
+	pabaigos_taško_platuma decimal,
+	pabaigos_taško_ilguma decimal,
+	trukmė time,
+	id serial,
+	fk_Rezervacija integer NOT NULL,
+	PRIMARY KEY(id),
+	UNIQUE(fk_Rezervacija),
+	CONSTRAINT priklauso FOREIGN KEY(fk_Rezervacija) REFERENCES rezervacijos (id)
+);
+
+CREATE TABLE vairuotojo_pažymėjimo_nuotraukos
+(
+	nuoroda varchar (255),
+	id serial,
+	fk_Vairuotojo_pazymejimas integer NOT NULL,
+	PRIMARY KEY(id),
+	CONSTRAINT turi FOREIGN KEY(fk_Vairuotojo_pazymejimas) REFERENCES vairuotojo_pažymėjimai (id)
+);
+
+CREATE TABLE žinutės
+(
+	tekstas varchar (255),
+	išsiųsta timestamp with time zone,
+	id serial,
+	fk_Vartotojas integer NOT NULL,
+	fk_Uzklausa integer NOT NULL,
+	PRIMARY KEY(id),
+	CONSTRAINT siunčia FOREIGN KEY(fk_Vartotojas) REFERENCES vartotojai (id),
+	CONSTRAINT priklauso FOREIGN KEY(fk_Uzklausa) REFERENCES užklausos (id)
+);
 
 
 -- migrate:down
