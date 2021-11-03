@@ -52,11 +52,11 @@ func (w *WSHandler) NewTicket(ctx context.Context, s *gows.Socket, r *router.Req
 		return
 	}
 
-	err = w.ticketUcase.Create(ctx, ss.UserID, req)
+	tID, err := w.ticketUcase.Create(ctx, ss.UserID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
-	router.WriteRes(s, &r.Method, nil)
+	router.WriteRes(s, &r.Method, tID)
 }
