@@ -140,7 +140,7 @@ CREATE TABLE rezervacijos
 CREATE TABLE sesijos
 (
 	galiojimo_pabaiga timestamp with time zone,
-	id serial,
+	id varchar (255),
 	fk_Vartotojas integer NOT NULL,
 	PRIMARY KEY(id),
 	CONSTRAINT sukuriama FOREIGN KEY(fk_Vartotojas) REFERENCES vartotojai (id)
