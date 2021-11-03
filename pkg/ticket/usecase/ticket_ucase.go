@@ -27,7 +27,7 @@ func New(tr ticket.Repository, ur user.Repository, t time.Duration, v ticket.Val
 	}
 }
 
-func (u *Usecase) Create(ctx context.Context, userID int, req *ticket.CreateReq) (int, error) {
+func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateReq) (int, error) {
 	if err := u.validate.RawRequest(req); err != nil {
 		return 0, ticket.InvalidInputError
 	}
@@ -40,7 +40,7 @@ func (u *Usecase) Create(ctx context.Context, userID int, req *ticket.CreateReq)
 		return 0, err
 	}
 
-	ended, err := u.ticketRepo.IsCurrTicketEndedTx(c, tx, userID)
+	ended, err := u.ticketRepo.IsCurrTicketEndedTx(c, tx, clientID)
 	if err != domain.ErrNotFound {
 		if err != nil {
 			return 0, err
@@ -52,7 +52,7 @@ func (u *Usecase) Create(ctx context.Context, userID int, req *ticket.CreateReq)
 	}
 
 	t := &domain.Ticket{
-		ClientID: userID,
+		ClientID: clientID,
 		AgentID:  nil,
 		Created:  time.Now(),
 		Ended:    nil,
