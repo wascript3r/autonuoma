@@ -55,7 +55,7 @@ func (u *Usecase) ClientSend(ctx context.Context, clientID int, req *message.Cli
 		Time:     time.Time{},
 	}
 
-	err = u.messageRepo.InsertTx(ctx, tx, m)
+	err = u.messageRepo.InsertTx(c, tx, m)
 	if err != nil {
 		return nil, err
 	}

@@ -58,7 +58,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 		Ended:    nil,
 	}
 
-	err = u.ticketRepo.InsertTx(ctx, tx, t)
+	err = u.ticketRepo.InsertTx(c, tx, t)
 	if err != nil {
 		return 0, err
 	}
@@ -70,7 +70,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 		Time:     time.Time{},
 	}
 
-	err = u.messageRepo.InsertTx(ctx, tx, m)
+	err = u.messageRepo.InsertTx(c, tx, m)
 	if err != nil {
 		return 0, err
 	}
