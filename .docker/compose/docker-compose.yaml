@@ -23,7 +23,7 @@ services:
       - 5432:5432
 
   pgadmin:
-    image: dpage/pgadmin4:5.7
+    image: dpage/pgadmin4:6.1
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_SETUP_EMAIL}
