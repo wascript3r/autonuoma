@@ -17,17 +17,17 @@ func NewWSMiddleware(roomKey string, tu ticket.Usecase) *WSMiddleware {
 	return &WSMiddleware{roomKey, tu}
 }
 
-func (w *WSMiddleware) ExtractRoom(s *gows.Socket) (pool.Room, bool) {
+func (w *WSMiddleware) ExtractRoom(s *gows.Socket) (pool.RoomName, bool) {
 	data, ok := s.GetData(w.roomKey)
 	if !ok {
 		return "", false
 	}
-	r, ok := data.(pool.Room)
+	r, ok := data.(pool.RoomName)
 	return r, ok
 }
 
-func (w *WSMiddleware) SetRoom(s *gows.Socket, r pool.Room) {
-	s.SetData(w.roomKey, r)
+func (w *WSMiddleware) SetRoom(s *gows.Socket, name pool.RoomName) {
+	s.SetData(w.roomKey, name)
 }
 
 func (w *WSMiddleware) DeleteRoom(s *gows.Socket) {

@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	AuthenticatedRoom       = pool.Room("auth")
-	AuthenticatedRoomConfig = pool.NewRoomConfig(false)
+	AuthenticatedRoomConfig = pool.NewRoomConfig("auth", false)
 )
 
 type WSHandler struct {
@@ -34,7 +33,7 @@ func NewWSHandler(r *router.Router, notAuth *middleware.Stack, uu user.Usecase, 
 		socketPool:   socketPool,
 	}
 
-	socketPool.CreateRoom(AuthenticatedRoom, AuthenticatedRoomConfig)
+	socketPool.CreateRoom(AuthenticatedRoomConfig)
 
 	r.HandleMethod("user/authenticate", notAuth.Wrap(handler.Authenticate))
 }
@@ -59,9 +58,9 @@ func (w *WSHandler) Authenticate(ctx context.Context, s *gows.Socket, r *router.
 		return
 	}
 	w.sessionMid.SetSession(s, ss)
-	w.socketPool.JoinRoom(s, AuthenticatedRoom)
+	w.socketPool.JoinRoom(s, AuthenticatedRoomConfig.Name)
 
-	w.socketPool.EmitRoom(AuthenticatedRoom, &router.Response{
+	w.socketPool.EmitRoom(AuthenticatedRoomConfig.Name, &router.Response{
 		Err:    nil,
 		Method: &r.Method,
 		Params: nil,
