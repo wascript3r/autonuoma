@@ -40,15 +40,12 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 		return 0, err
 	}
 
-	ended, err := u.ticketRepo.IsLastTicketEndedTx(c, tx, clientID)
+	_, err = u.ticketRepo.GetLastActiveTicketIDTx(c, tx, clientID)
 	if err != domain.ErrNotFound {
 		if err != nil {
 			return 0, err
 		}
-
-		if !ended {
-			return 0, ticket.TicketStillActiveError
-		}
+		return 0, ticket.TicketStillActiveError
 	}
 
 	t := &domain.Ticket{

@@ -15,7 +15,4 @@ type Repository interface {
 
 	GetLastActiveTicketID(ctx context.Context, clientID int) (int, error)
 	GetLastActiveTicketIDTx(ctx context.Context, tx repository.Transaction, clientID int) (int, error)
-
-	IsLastTicketEnded(ctx context.Context, clientID int) (bool, error)
-	IsLastTicketEndedTx(ctx context.Context, tx repository.Transaction, clientID int) (bool, error)
 }

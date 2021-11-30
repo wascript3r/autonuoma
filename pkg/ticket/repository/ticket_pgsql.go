@@ -12,11 +12,8 @@ import (
 const (
 	insertSQL = "INSERT INTO užklausos (fk_klientas, fk_klientų_aptarnavimo_specialistas, sukurta, užbaigta) VALUES ($1, $2, $3, $4) RETURNING id"
 
-	// TODO: combine those both queries into one
 	getLastActiveTicketIDSQL          = "SELECT id FROM užklausos WHERE fk_klientas = $1 AND užbaigta IS NULL ORDER BY id DESC LIMIT 1"
 	getLastActiveTicketIDForUpdateSQL = getLastActiveTicketIDSQL + " FOR UPDATE"
-	isCurrTicketEndedSQL              = "SELECT CASE WHEN užbaigta IS NULL THEN false ELSE true END AS užbaigta_b FROM užklausos WHERE fk_klientas = $1 ORDER BY id DESC LIMIT 1"
-	isCurrTicketEndedForUpdateSQL     = isCurrTicketEndedSQL + " FOR UPDATE"
 )
 
 type PgRepo struct {
@@ -93,45 +90,4 @@ func (p *PgRepo) GetLastActiveTicketIDTx(ctx context.Context, tx repository.Tran
 	}
 
 	return ticketID, nil
-}
-
-func (p *PgRepo) isCurrTicketEnded(ctx context.Context, q pgsql.Querier, clientID int, forUpdate bool) (bool, error) {
-	var (
-		ended bool
-		query string
-	)
-
-	if forUpdate {
-		query = isCurrTicketEndedForUpdateSQL
-	} else {
-		query = isCurrTicketEndedSQL
-	}
-
-	err := q.QueryRowContext(ctx, query, clientID).Scan(&ended)
-	if err != nil {
-		return false, pgsql.ParseSQLError(err)
-	}
-
-	return ended, nil
-}
-
-func (p *PgRepo) IsLastTicketEnded(ctx context.Context, clientID int) (bool, error) {
-	return p.isCurrTicketEnded(ctx, p.conn, clientID, false)
-}
-
-func (p *PgRepo) IsLastTicketEndedTx(ctx context.Context, tx repository.Transaction, clientID int) (bool, error) {
-	sqlTx, ok := tx.(*sql.Tx)
-	if !ok {
-		return false, repository.ErrTxMismatch
-	}
-
-	ended, err := p.isCurrTicketEnded(ctx, sqlTx, clientID, true)
-	if err != nil {
-		if err != domain.ErrNotFound {
-			sqlTx.Rollback()
-		}
-		return false, err
-	}
-
-	return ended, nil
 }
