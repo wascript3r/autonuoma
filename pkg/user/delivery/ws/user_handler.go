@@ -26,7 +26,7 @@ type WSHandler struct {
 	socketPool   *pool.Pool
 }
 
-func NewWSHandler(r *router.Router, admin *middleware.Stack, notAuth *middleware.Stack, uu user.Usecase, su session.Usecase, sm sessionHandler.Middleware, socketPool *pool.Pool) {
+func NewWSHandler(r *router.Router, notAuth *middleware.Stack, uu user.Usecase, su session.Usecase, sm sessionHandler.Middleware, socketPool *pool.Pool) {
 	handler := &WSHandler{
 		userUcase:    uu,
 		sessionUcase: su,
@@ -37,7 +37,6 @@ func NewWSHandler(r *router.Router, admin *middleware.Stack, notAuth *middleware
 	socketPool.CreateRoom(AuthenticatedRoom, AuthenticatedRoomConfig)
 
 	r.HandleMethod("user/authenticate", notAuth.Wrap(handler.Authenticate))
-	r.HandleMethod("user/test", admin.Wrap(handler.Test))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -65,21 +64,6 @@ func (w *WSHandler) Authenticate(ctx context.Context, s *gows.Socket, r *router.
 	w.socketPool.EmitRoom(AuthenticatedRoom, &router.Response{
 		Err:    nil,
 		Method: &r.Method,
-		Params: router.Params{
-			"uuid": s.GetUUID(),
-		},
-	})
-}
-
-func (w *WSHandler) Test(ctx context.Context, s *gows.Socket, r *router.Request) {
-	ss, err := w.sessionUcase.LoadCtx(ctx)
-	if err != nil {
-		serveError(s, r, err)
-		return
-	}
-
-	router.WriteRes(s, &r.Method, router.Params{
-		"sessID": ss.ID,
-		"uID":    ss.UserID,
+		Params: nil,
 	})
 }

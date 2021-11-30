@@ -237,7 +237,6 @@ func main() {
 
 	_userWsHandler.NewWSHandler(
 		wsRouter,
-		adminWsStack,
 		notAuthWsStack,
 
 		userUcase,
