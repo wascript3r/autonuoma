@@ -59,7 +59,7 @@ github.com/wascript3r/gopool
 # github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216
 ## explicit; go 1.13
 github.com/wascript3r/gostr
-# github.com/wascript3r/gows v0.0.0-20211102224932-e212233f5281
+# github.com/wascript3r/gows v0.0.0-20211130184605-6dfc2ce4383b
 ## explicit; go 1.13
 github.com/wascript3r/gows
 github.com/wascript3r/gows/eventbus
@@ -76,7 +76,7 @@ github.com/wascript3r/httputil/middleware
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/sha3
-# golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069
+# golang.org/x/sys v0.0.0-20211124211545-fe61309f8881
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
