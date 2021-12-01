@@ -34,6 +34,11 @@ type MessageInfo struct {
 	Time    time.Time `json:"time"`
 }
 
+type AgentGetMessagesReq struct {
+	TicketID int `json:"ticketID" validate:"required"`
+}
+
 type GetMessagesRes struct {
-	Messages []*MessageInfo `json:"messages"`
+	TicketEnded bool           `json:"ticketEnded"`
+	Messages    []*MessageInfo `json:"messages"`
 }

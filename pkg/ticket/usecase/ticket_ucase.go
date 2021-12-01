@@ -110,7 +110,7 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 		} else if meta.Status == domain.EndedTicketStatus {
 			return ticket.TicketAlreadyEndedError
 		}
-		return ticket.UnknownError
+		return domain.ErrInvalidTicketStatus
 	}
 
 	err = u.ticketRepo.SetAgentTx(c, tx, req.TicketID, agentID)
@@ -185,7 +185,7 @@ func (u *Usecase) AgentEnd(ctx context.Context, agentID int, req *ticket.AgentEn
 		}
 		err = u.ticketRepo.SetEndedTx(c, tx, req.TicketID, time.Now())
 	} else {
-		return ticket.UnknownError
+		return domain.ErrInvalidTicketStatus
 	}
 
 	if err != nil {
@@ -199,19 +199,8 @@ func (u *Usecase) AgentEnd(ctx context.Context, agentID int, req *ticket.AgentEn
 	return nil
 }
 
-func (u *Usecase) ClientGetMessages(ctx context.Context, clientID int) (*ticket.GetMessagesRes, error) {
-	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
-	defer cancel()
-
-	id, err := u.ticketRepo.GetLastActiveTicketID(c, clientID)
-	if err != nil {
-		if err == domain.ErrNotFound {
-			return nil, ticket.NoActiveTicketsError
-		}
-		return nil, err
-	}
-
-	ms, err := u.messageRepo.GetTicketMessages(ctx, id)
+func (u *Usecase) getMessages(ctx context.Context, ticketID int, ticketEnded bool) (*ticket.GetMessagesRes, error) {
+	ms, err := u.messageRepo.GetTicketMessages(ctx, ticketID)
 	if err != nil {
 		return nil, err
 	}
@@ -230,6 +219,46 @@ func (u *Usecase) ClientGetMessages(ctx context.Context, clientID int) (*ticket.
 	}
 
 	return &ticket.GetMessagesRes{
-		Messages: messages,
+		TicketEnded: ticketEnded,
+		Messages:    messages,
 	}, nil
+}
+
+func (u *Usecase) ClientGetMessages(ctx context.Context, clientID int) (*ticket.GetMessagesRes, error) {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	id, err := u.ticketRepo.GetLastActiveTicketID(c, clientID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return nil, ticket.NoActiveTicketsError
+		}
+		return nil, err
+	}
+
+	return u.getMessages(c, id, false)
+}
+
+func (u *Usecase) AgentGetMessages(ctx context.Context, req *ticket.AgentGetMessagesReq) (*ticket.GetMessagesRes, error) {
+	if err := u.validate.RawRequest(req); err != nil {
+		return nil, ticket.InvalidInputError
+	}
+
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	meta, err := u.ticketRepo.GetTicketMeta(c, req.TicketID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return nil, ticket.TicketNotFoundError
+		}
+		return nil, err
+	}
+
+	if !domain.IsValidTicketStatus(meta.Status) {
+		return nil, domain.ErrInvalidTicketStatus
+	}
+
+	ticketEnded := meta.Status == domain.EndedTicketStatus
+	return u.getMessages(c, req.TicketID, ticketEnded)
 }

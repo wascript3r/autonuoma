@@ -10,4 +10,5 @@ type Usecase interface {
 	ClientEnd(ctx context.Context, clientID int) error
 	AgentEnd(ctx context.Context, agentID int, req *AgentEndReq) error
 	ClientGetMessages(ctx context.Context, clientID int) (*GetMessagesRes, error)
+	AgentGetMessages(ctx context.Context, req *AgentGetMessagesReq) (*GetMessagesRes, error)
 }

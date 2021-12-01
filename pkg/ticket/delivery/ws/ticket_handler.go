@@ -41,6 +41,7 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.
 	r.HandleMethod("ticket/client/end", client.Wrap(handler.ClientEndTicket))
 	r.HandleMethod("ticket/agent/end", agent.Wrap(handler.AgentEndTicket))
 	r.HandleMethod("ticket/client/messages", client.Wrap(handler.ClientGetMessages))
+	r.HandleMethod("ticket/agent/messages", agent.Wrap(handler.AgentGetMessages))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -159,6 +160,24 @@ func (w *WSHandler) ClientGetMessages(ctx context.Context, s *gows.Socket, r *ro
 	}
 
 	res, err := w.ticketUcase.ClientGetMessages(ctx, ss.UserID)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, res)
+}
+
+func (w *WSHandler) AgentGetMessages(ctx context.Context, s *gows.Socket, r *router.Request) {
+	req := &ticket.AgentGetMessagesReq{}
+
+	err := json.Unmarshal(r.Params, req)
+	if err != nil {
+		router.WriteBadRequest(s, &r.Method)
+		return
+	}
+
+	res, err := w.ticketUcase.AgentGetMessages(ctx, req)
 	if err != nil {
 		serveError(s, r, err)
 		return

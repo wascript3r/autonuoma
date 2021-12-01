@@ -94,7 +94,7 @@ func (u *Usecase) AgentSend(ctx context.Context, agentID int, req *message.Agent
 	} else if meta.Status == domain.CreatedTicketStatus {
 		return nil, ticket.TicketNotAcceptedError
 	} else if meta.Status != domain.AcceptedTicketStatus || meta.AgentID == nil {
-		return nil, ticket.UnknownError
+		return nil, domain.ErrInvalidTicketStatus
 	} else if *meta.AgentID != agentID {
 		return nil, ticket.TicketNotOwnedError
 	}
