@@ -6,7 +6,7 @@ type Role int8
 
 const (
 	UserRole Role = iota + 1
-	SupportRole
+	AgentRole
 	AdminRole
 )
 
@@ -23,6 +23,7 @@ type User struct {
 }
 
 type UserMeta struct {
-	ID    int
-	Email string
+	ID        int
+	FirstName string
+	LastName  string
 }

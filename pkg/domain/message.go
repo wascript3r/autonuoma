@@ -9,3 +9,9 @@ type Message struct {
 	Content  string
 	Time     time.Time
 }
+
+type MessageFull struct {
+	UserMeta *UserMeta
+	Content  string
+	Time     time.Time
+}

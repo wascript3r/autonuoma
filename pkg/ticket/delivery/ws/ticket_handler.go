@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/wascript3r/autonuoma/pkg/domain"
+	"github.com/wascript3r/autonuoma/pkg/room"
 	"github.com/wascript3r/autonuoma/pkg/session"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
 	"github.com/wascript3r/autonuoma/pkg/user"
@@ -18,18 +20,28 @@ type WSHandler struct {
 	ticketUcase  ticket.Usecase
 	sessionUcase session.Usecase
 	ticketMid    Middleware
-	socketPool   *pool.Pool
+	roomUcase    room.Usecase
+
+	socketPool *pool.Pool
 }
 
-func NewWSHandler(r *router.Router, client *middleware.Stack, tu ticket.Usecase, su session.Usecase, tm Middleware, socketPool *pool.Pool) {
+func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.Stack, tu ticket.Usecase, su session.Usecase, tm Middleware, teb ticket.EventBus, ru room.Usecase, socketPool *pool.Pool) {
 	handler := &WSHandler{
 		ticketUcase:  tu,
 		sessionUcase: su,
 		ticketMid:    tm,
-		socketPool:   socketPool,
+		roomUcase:    ru,
+
+		socketPool: socketPool,
 	}
 
+	teb.Subscribe(ticket.NewTicketEvent, handler.NewTicketNotification("ticket/notification"))
 	r.HandleMethod("ticket/new", client.Wrap(handler.NewTicket))
+	r.HandleMethod("ticket/accept", agent.Wrap(handler.AcceptTicket))
+	r.HandleMethod("ticket/client/end", client.Wrap(handler.ClientEndTicket))
+	r.HandleMethod("ticket/agent/end", agent.Wrap(handler.AgentEndTicket))
+	r.HandleMethod("ticket/client/messages", client.Wrap(handler.ClientGetMessages))
+	r.HandleMethod("ticket/agent/messages", agent.Wrap(handler.AgentGetMessages))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -59,4 +71,117 @@ func (w *WSHandler) NewTicket(ctx context.Context, s *gows.Socket, r *router.Req
 	}
 
 	router.WriteRes(s, &r.Method, tID)
+}
+
+func (w *WSHandler) AcceptTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+	ss, err := w.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	req := &ticket.AcceptReq{}
+
+	err = json.Unmarshal(r.Params, req)
+	if err != nil {
+		router.WriteBadRequest(s, &r.Method)
+		return
+	}
+
+	err = w.ticketUcase.Accept(ctx, ss.UserID, req)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, nil)
+}
+
+func (w *WSHandler) ClientEndTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+	ss, err := w.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	err = w.ticketUcase.ClientEnd(ctx, ss.UserID)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, nil)
+}
+
+func (w *WSHandler) AgentEndTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+	ss, err := w.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	req := &ticket.AgentEndReq{}
+
+	err = json.Unmarshal(r.Params, req)
+	if err != nil {
+		router.WriteBadRequest(s, &r.Method)
+		return
+	}
+
+	err = w.ticketUcase.AgentEnd(ctx, ss.UserID, req)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, nil)
+}
+
+func (w *WSHandler) NewTicketNotification(method string) func(ctx context.Context) {
+	return func(ctx context.Context) {
+		rName, err := w.roomUcase.GetName(domain.AgentRoom)
+		if err != nil {
+			return
+		}
+
+		w.socketPool.EmitRoom(pool.RoomName(rName), &router.Response{
+			Err:    nil,
+			Method: &method,
+			Params: nil,
+		})
+	}
+}
+
+func (w *WSHandler) ClientGetMessages(ctx context.Context, s *gows.Socket, r *router.Request) {
+	ss, err := w.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	res, err := w.ticketUcase.ClientGetMessages(ctx, ss.UserID)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, res)
+}
+
+func (w *WSHandler) AgentGetMessages(ctx context.Context, s *gows.Socket, r *router.Request) {
+	req := &ticket.AgentGetMessagesReq{}
+
+	err := json.Unmarshal(r.Params, req)
+	if err != nil {
+		router.WriteBadRequest(s, &r.Method)
+		return
+	}
+
+	res, err := w.ticketUcase.AgentGetMessages(ctx, req)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, res)
 }

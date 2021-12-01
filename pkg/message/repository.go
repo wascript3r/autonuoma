@@ -12,4 +12,7 @@ type Repository interface {
 
 	Insert(ctx context.Context, ms *domain.Message) error
 	InsertTx(ctx context.Context, tx repository.Transaction, ms *domain.Message) error
+
+	GetTicketMessages(ctx context.Context, ticketID int) ([]*domain.MessageFull, error)
+	GetTicketMessagesTx(ctx context.Context, tx repository.Transaction, ticketID int) ([]*domain.MessageFull, error)
 }

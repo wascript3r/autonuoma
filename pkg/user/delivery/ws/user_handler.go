@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/wascript3r/autonuoma/pkg/domain"
+	"github.com/wascript3r/autonuoma/pkg/room"
 	"github.com/wascript3r/autonuoma/pkg/session"
 	sessionHandler "github.com/wascript3r/autonuoma/pkg/session/delivery/ws"
 	"github.com/wascript3r/autonuoma/pkg/user"
@@ -15,8 +17,13 @@ import (
 )
 
 var (
-	AuthenticatedRoom       = pool.Room("auth")
-	AuthenticatedRoomConfig = pool.NewRoomConfig(false)
+	AuthenticatedRoom = pool.NewRoomConfig("auth", false)
+	AgentRoom         = pool.NewRoomConfig("agent", false)
+
+	RoomConfigs = map[domain.Room]*pool.RoomConfig{
+		domain.AuthenticatedRoom: AuthenticatedRoom,
+		domain.AgentRoom:         AgentRoom,
+	}
 )
 
 type WSHandler struct {
@@ -26,7 +33,7 @@ type WSHandler struct {
 	socketPool   *pool.Pool
 }
 
-func NewWSHandler(r *router.Router, admin *middleware.Stack, notAuth *middleware.Stack, uu user.Usecase, su session.Usecase, sm sessionHandler.Middleware, socketPool *pool.Pool) {
+func NewWSHandler(r *router.Router, notAuth *middleware.Stack, uu user.Usecase, su session.Usecase, sm sessionHandler.Middleware, ru room.Usecase, socketPool *pool.Pool) {
 	handler := &WSHandler{
 		userUcase:    uu,
 		sessionUcase: su,
@@ -34,10 +41,12 @@ func NewWSHandler(r *router.Router, admin *middleware.Stack, notAuth *middleware
 		socketPool:   socketPool,
 	}
 
-	socketPool.CreateRoom(AuthenticatedRoom, AuthenticatedRoomConfig)
+	for r, rc := range RoomConfigs {
+		ru.Register(r, rc)
+		socketPool.CreateRoom(rc)
+	}
 
 	r.HandleMethod("user/authenticate", notAuth.Wrap(handler.Authenticate))
-	r.HandleMethod("user/test", admin.Wrap(handler.Test))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -60,26 +69,15 @@ func (w *WSHandler) Authenticate(ctx context.Context, s *gows.Socket, r *router.
 		return
 	}
 	w.sessionMid.SetSession(s, ss)
-	w.socketPool.JoinRoom(s, AuthenticatedRoom)
 
-	w.socketPool.EmitRoom(AuthenticatedRoom, &router.Response{
-		Err:    nil,
-		Method: &r.Method,
-		Params: router.Params{
-			"uuid": s.GetUUID(),
-		},
-	})
-}
-
-func (w *WSHandler) Test(ctx context.Context, s *gows.Socket, r *router.Request) {
-	ss, err := w.sessionUcase.LoadCtx(ctx)
-	if err != nil {
-		serveError(s, r, err)
-		return
+	w.socketPool.JoinRoom(s, AuthenticatedRoom.Name())
+	if domain.HasRole(ss, domain.AgentRole) {
+		w.socketPool.JoinRoom(s, AgentRoom.Name())
 	}
 
-	router.WriteRes(s, &r.Method, router.Params{
-		"sessID": ss.ID,
-		"uID":    ss.UserID,
+	w.socketPool.EmitRoom(AuthenticatedRoom.Name(), &router.Response{
+		Err:    nil,
+		Method: &r.Method,
+		Params: nil,
 	})
 }

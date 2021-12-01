@@ -6,7 +6,7 @@ import (
 )
 
 type Middleware interface {
-	ExtractRoom(s *gows.Socket) (pool.Room, bool)
-	SetRoom(s *gows.Socket, r pool.Room)
+	ExtractRoom(s *gows.Socket) (pool.RoomName, bool)
+	SetRoom(s *gows.Socket, name pool.RoomName)
 	DeleteRoom(s *gows.Socket)
 }

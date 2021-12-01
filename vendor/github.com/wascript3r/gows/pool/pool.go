@@ -20,41 +20,58 @@ var (
 	ErrRoomIsNotJoined    = errors.New("room is not joined")
 )
 
-type Room string
+type RoomName string
 
 type RoomConfig struct {
-	DeleteWhenEmpty bool
+	name            RoomName
+	deleteWhenEmpty bool
 }
 
-func NewRoomConfig(deleteWhenEmpty bool) *RoomConfig {
-	return &RoomConfig{deleteWhenEmpty}
+type room struct {
+	config  *RoomConfig
+	sockets map[gows.UUID]*socket
+}
+
+func NewRoomConfig(name RoomName, deleteWhenEmpty bool) *RoomConfig {
+	return &RoomConfig{
+		name:            name,
+		deleteWhenEmpty: deleteWhenEmpty,
+	}
+}
+
+func (r *RoomConfig) Name() RoomName {
+	return r.name
+}
+
+func (r *RoomConfig) NameString() string {
+	return string(r.name)
 }
 
 type socket struct {
 	*gows.Socket
-	rooms []Room
+	rooms []RoomName
 }
 
-func (s socket) isJoined(room Room) bool {
+func (s socket) isJoined(name RoomName) bool {
 	for _, r := range s.rooms {
-		if r == room {
+		if r == name {
 			return true
 		}
 	}
 	return false
 }
 
-func (s *socket) joinRoom(room Room) error {
-	if s.isJoined(room) {
+func (s *socket) joinRoom(name RoomName) error {
+	if s.isJoined(name) {
 		return ErrRoomAlreadyJoined
 	}
-	s.rooms = append(s.rooms, room)
+	s.rooms = append(s.rooms, name)
 	return nil
 }
 
-func (s *socket) leaveRoom(room Room) error {
+func (s *socket) leaveRoom(name RoomName) error {
 	for i, r := range s.rooms {
-		if r == room {
+		if r == name {
 			s.rooms = append(s.rooms[:i], s.rooms[i+1:]...)
 			return nil
 		}
@@ -65,32 +82,30 @@ func (s *socket) leaveRoom(room Room) error {
 type SocketFilter func(socket *gows.Socket) bool
 
 type emitReq struct {
-	room   *Room
-	res    *router.Response
-	filter SocketFilter
+	roomName *RoomName
+	res      *router.Response
+	filter   SocketFilter
 }
 
 type Pool struct {
 	pool *gopool.Pool
 	log  logger.Usecase
 
-	mx          *sync.RWMutex
-	sockets     map[gows.UUID]*socket
-	rooms       map[Room]map[gows.UUID]*socket
-	roomConfigs map[Room]*RoomConfig
-	emitC       chan emitReq
+	mx      *sync.RWMutex
+	sockets map[gows.UUID]*socket
+	rooms   map[RoomName]*room
+	emitC   chan emitReq
 }
 
-func New(ctx context.Context, pool *gopool.Pool, log logger.Usecase, ev gows.EventBus) (*Pool, error) {
+func NewPool(ctx context.Context, pool *gopool.Pool, log logger.Usecase, ev gows.EventBus) (*Pool, error) {
 	p := &Pool{
 		pool: pool,
 		log:  log,
 
-		mx:          &sync.RWMutex{},
-		sockets:     make(map[gows.UUID]*socket),
-		rooms:       make(map[Room]map[gows.UUID]*socket),
-		roomConfigs: make(map[Room]*RoomConfig),
-		emitC:       make(chan emitReq, 1),
+		mx:      &sync.RWMutex{},
+		sockets: make(map[gows.UUID]*socket),
+		rooms:   make(map[RoomName]*room),
+		emitC:   make(chan emitReq, 1),
 	}
 
 	ev.Subscribe(gows.NewConnectionEvent, p.handleNewConn)
@@ -145,11 +160,15 @@ func (p *Pool) handleDisconnect(_ context.Context, s *gows.Socket, _ *gows.Reque
 		return
 	}
 
-	for _, r := range ss.rooms {
-		delete(p.rooms[r], s.GetUUID())
-		if p.roomConfigs[r].DeleteWhenEmpty && len(p.rooms[r]) == 0 {
-			delete(p.rooms, r)
-			delete(p.roomConfigs, r)
+	for _, name := range ss.rooms {
+		r, ok := p.rooms[name]
+		if !ok {
+			continue
+		}
+
+		delete(r.sockets, s.GetUUID())
+		if r.config.deleteWhenEmpty && len(r.sockets) == 0 {
+			delete(p.rooms, name)
 		}
 	}
 	delete(p.sockets, s.GetUUID())
@@ -162,16 +181,24 @@ func (p *Pool) NumSockets() int {
 	return len(p.sockets)
 }
 
-func (p *Pool) RoomNumSockets(r Room) (int, error) {
+func (p *Pool) RoomNumSockets(name RoomName) (int, error) {
 	p.mx.RLock()
 	defer p.mx.RUnlock()
 
-	sockets, ok := p.rooms[r]
+	r, ok := p.rooms[name]
 	if !ok {
 		return 0, ErrRoomDoesNotExist
 	}
 
-	return len(sockets), nil
+	return len(r.sockets), nil
+}
+
+func (p *Pool) RoomExists(name RoomName) bool {
+	p.mx.RLock()
+	defer p.mx.RUnlock()
+
+	_, ok := p.rooms[name]
+	return ok
 }
 
 func (p *Pool) emitMany(r emitReq) error {
@@ -184,10 +211,14 @@ func (p *Pool) emitMany(r emitReq) error {
 	defer p.mx.RUnlock()
 
 	var sockets map[gows.UUID]*socket
-	if r.room == nil {
+	if r.roomName == nil {
 		sockets = p.sockets
 	} else {
-		sockets = p.rooms[*r.room]
+		room, ok := p.rooms[*r.roomName]
+		if !ok {
+			return nil
+		}
+		sockets = room.sockets
 	}
 
 	count := len(sockets)
@@ -214,42 +245,44 @@ func (p *Pool) emitMany(r emitReq) error {
 	return nil
 }
 
-func (p *Pool) CreateRoom(r Room, c *RoomConfig) error {
+func (p *Pool) CreateRoom(c *RoomConfig) error {
 	p.mx.Lock()
 	defer p.mx.Unlock()
 
-	if _, ok := p.rooms[r]; ok {
+	if _, ok := p.rooms[c.name]; ok {
 		return ErrRoomAlreadyExists
 	}
 
-	p.rooms[r] = make(map[gows.UUID]*socket)
-	p.roomConfigs[r] = c
+	p.rooms[c.name] = &room{
+		config:  c,
+		sockets: make(map[gows.UUID]*socket),
+	}
 	return nil
 }
 
-func (p *Pool) DeleteRoom(r Room) error {
+func (p *Pool) DeleteRoom(name RoomName) error {
 	p.mx.Lock()
 	defer p.mx.Unlock()
 
-	sockets, ok := p.rooms[r]
+	r, ok := p.rooms[name]
 	if !ok {
 		return ErrRoomDoesNotExist
 	}
 
-	for _, ss := range sockets {
-		ss.leaveRoom(r)
+	for _, s := range r.sockets {
+		s.leaveRoom(name)
 	}
 
-	delete(p.rooms, r)
-	delete(p.roomConfigs, r)
+	delete(p.rooms, name)
 	return nil
 }
 
-func (p *Pool) JoinRoom(s *gows.Socket, r Room) error {
+func (p *Pool) JoinRoom(s *gows.Socket, name RoomName) error {
 	p.mx.Lock()
 	defer p.mx.Unlock()
 
-	if _, ok := p.rooms[r]; !ok {
+	r, ok := p.rooms[name]
+	if !ok {
 		return ErrRoomDoesNotExist
 	}
 
@@ -258,19 +291,20 @@ func (p *Pool) JoinRoom(s *gows.Socket, r Room) error {
 		return ErrSocketDoesNotExist
 	}
 
-	if err := ss.joinRoom(r); err != nil {
+	if err := ss.joinRoom(name); err != nil {
 		return err
 	}
 
-	p.rooms[r][s.GetUUID()] = ss
+	r.sockets[s.GetUUID()] = ss
 	return nil
 }
 
-func (p *Pool) LeaveRoom(s *gows.Socket, r Room) error {
+func (p *Pool) LeaveRoom(s *gows.Socket, name RoomName) error {
 	p.mx.Lock()
 	defer p.mx.Unlock()
 
-	if _, ok := p.rooms[r]; !ok {
+	r, ok := p.rooms[name]
+	if !ok {
 		return ErrRoomDoesNotExist
 	}
 
@@ -279,11 +313,11 @@ func (p *Pool) LeaveRoom(s *gows.Socket, r Room) error {
 		return ErrSocketDoesNotExist
 	}
 
-	if err := ss.leaveRoom(r); err != nil {
+	if err := ss.leaveRoom(name); err != nil {
 		return err
 	}
 
-	delete(p.rooms[r], s.GetUUID())
+	delete(r.sockets, s.GetUUID())
 	return nil
 }
 
@@ -301,32 +335,32 @@ func (p *Pool) EmitUUID(uuid gows.UUID, res *router.Response) error {
 
 func (p *Pool) EmitAll(res *router.Response) {
 	p.emitC <- emitReq{
-		room:   nil,
-		res:    res,
-		filter: nil,
+		roomName: nil,
+		res:      res,
+		filter:   nil,
 	}
 }
 
 func (p *Pool) EmitAllFilter(res *router.Response, f SocketFilter) {
 	p.emitC <- emitReq{
-		room:   nil,
-		res:    res,
-		filter: f,
+		roomName: nil,
+		res:      res,
+		filter:   f,
 	}
 }
 
-func (p *Pool) EmitRoom(r Room, res *router.Response) {
+func (p *Pool) EmitRoom(name RoomName, res *router.Response) {
 	p.emitC <- emitReq{
-		room:   &r,
-		res:    res,
-		filter: nil,
+		roomName: &name,
+		res:      res,
+		filter:   nil,
 	}
 }
 
-func (p *Pool) EmitRoomFilter(r Room, res *router.Response, f SocketFilter) {
+func (p *Pool) EmitRoomFilter(name RoomName, res *router.Response, f SocketFilter) {
 	p.emitC <- emitReq{
-		room:   &r,
-		res:    res,
-		filter: f,
+		roomName: &name,
+		res:      res,
+		filter:   f,
 	}
 }
