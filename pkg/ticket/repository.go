@@ -20,9 +20,12 @@ type Repository interface {
 	SetEnded(ctx context.Context, id int, ended time.Time) error
 	SetEndedTx(ctx context.Context, tx repository.Transaction, id int, ended time.Time) error
 
+	SetAgentEnded(ctx context.Context, id int, agentID int, ended time.Time) error
+	SetAgentEndedTx(ctx context.Context, tx repository.Transaction, id int, agentID int, ended time.Time) error
+
 	GetLastActiveTicketID(ctx context.Context, clientID int) (int, error)
 	GetLastActiveTicketIDTx(ctx context.Context, tx repository.Transaction, clientID int) (int, error)
 
-	GetTicketStatus(ctx context.Context, id int) (domain.TicketStatus, error)
-	GetTicketStatusTx(ctx context.Context, tx repository.Transaction, id int) (domain.TicketStatus, error)
+	GetTicketMeta(ctx context.Context, id int) (*domain.TicketMeta, error)
+	GetTicketMetaTx(ctx context.Context, tx repository.Transaction, id int) (*domain.TicketMeta, error)
 }

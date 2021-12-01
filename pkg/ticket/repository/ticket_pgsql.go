@@ -11,15 +11,16 @@ import (
 )
 
 const (
-	insertSQL   = "INSERT INTO užklausos (fk_klientas, fk_klientų_aptarnavimo_specialistas, sukurta, užbaigta) VALUES ($1, $2, $3, $4) RETURNING id"
-	setEndedSQL = "UPDATE užklausos SET užbaigta = $2 WHERE id = $1"
-	setAgentSQL = "UPDATE užklausos SET fk_klientų_aptarnavimo_specialistas = $2 WHERE id = $1"
+	insertSQL        = "INSERT INTO užklausos (fk_klientas, fk_klientų_aptarnavimo_specialistas, sukurta, užbaigta) VALUES ($1, $2, $3, $4) RETURNING id"
+	setAgentSQL      = "UPDATE užklausos SET fk_klientų_aptarnavimo_specialistas = $2 WHERE id = $1"
+	setEndedSQL      = "UPDATE užklausos SET užbaigta = $2 WHERE id = $1"
+	setAgentEndedSQL = "UPDATE užklausos SET fk_klientų_aptarnavimo_specialistas = $2, užbaigta = $3 WHERE id = $1"
 
 	getLastActiveTicketIDSQL          = "SELECT id FROM užklausos WHERE fk_klientas = $1 AND užbaigta IS NULL ORDER BY id DESC LIMIT 1"
 	getLastActiveTicketIDForUpdateSQL = getLastActiveTicketIDSQL + " FOR UPDATE"
 
-	getTicketStatusSQL          = "SELECT užbaigta, fk_klientų_aptarnavimo_specialistas FROM užklausos WHERE id = $1"
-	getTicketStatusForUpdateSQL = getTicketStatusSQL + " FOR UPDATE"
+	getTicketMetaSQL          = "SELECT fk_klientų_aptarnavimo_specialistas, užbaigta FROM užklausos WHERE id = $1"
+	getTicketMetaForUpdateSQL = getTicketMetaSQL + " FOR UPDATE"
 )
 
 type PgRepo struct {
@@ -105,6 +106,30 @@ func (p *PgRepo) SetEndedTx(ctx context.Context, tx repository.Transaction, id i
 	return nil
 }
 
+func (p *PgRepo) setAgentEnded(ctx context.Context, q pgsql.Querier, id int, agentID int, ended time.Time) error {
+	_, err := q.ExecContext(ctx, setAgentEndedSQL, id, agentID, ended)
+	return err
+}
+
+func (p *PgRepo) SetAgentEnded(ctx context.Context, id int, agentID int, ended time.Time) error {
+	return p.setAgentEnded(ctx, p.conn, id, agentID, ended)
+}
+
+func (p *PgRepo) SetAgentEndedTx(ctx context.Context, tx repository.Transaction, id int, agentID int, ended time.Time) error {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return repository.ErrTxMismatch
+	}
+
+	err := p.setAgentEnded(ctx, sqlTx, id, agentID, ended)
+	if err != nil {
+		sqlTx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
 func (p *PgRepo) getLastActiveTicketID(ctx context.Context, q pgsql.Querier, clientID int, forUpdate bool) (int, error) {
 	var (
 		ticketID int
@@ -146,49 +171,56 @@ func (p *PgRepo) GetLastActiveTicketIDTx(ctx context.Context, tx repository.Tran
 	return ticketID, nil
 }
 
-func (p *PgRepo) getTicketStatus(ctx context.Context, q pgsql.Querier, id int, forUpdate bool) (domain.TicketStatus, error) {
+func (p *PgRepo) getTicketMeta(ctx context.Context, q pgsql.Querier, id int, forUpdate bool) (*domain.TicketMeta, error) {
 	var (
 		query   string
-		ended   *time.Time
 		agentID *int
+		ended   *time.Time
 	)
 
 	if forUpdate {
-		query = getTicketStatusForUpdateSQL
+		query = getTicketMetaForUpdateSQL
 	} else {
-		query = getTicketStatusSQL
+		query = getTicketMetaSQL
 	}
 
-	err := q.QueryRowContext(ctx, query, id).Scan(&ended, &agentID)
+	err := q.QueryRowContext(ctx, query, id).Scan(&agentID, &ended)
 	if err != nil {
-		return 0, pgsql.ParseSQLError(err)
+		return nil, pgsql.ParseSQLError(err)
 	}
 
+	var status domain.TicketStatus
 	if ended == nil {
 		if agentID == nil {
-			return domain.CreatedTicketStatus, nil
+			status = domain.CreatedTicketStatus
 		} else {
-			return domain.AcceptedTicketStatus, nil
+			status = domain.AcceptedTicketStatus
 		}
+	} else {
+		status = domain.EndedTicketStatus
 	}
 
-	return domain.EndedTicketStatus, nil
+	return &domain.TicketMeta{
+		Status:  status,
+		AgentID: agentID,
+		Ended:   ended,
+	}, nil
 }
 
-func (p *PgRepo) GetTicketStatus(ctx context.Context, id int) (domain.TicketStatus, error) {
-	return p.getTicketStatus(ctx, p.conn, id, false)
+func (p *PgRepo) GetTicketMeta(ctx context.Context, id int) (*domain.TicketMeta, error) {
+	return p.getTicketMeta(ctx, p.conn, id, false)
 }
 
-func (p *PgRepo) GetTicketStatusTx(ctx context.Context, tx repository.Transaction, id int) (domain.TicketStatus, error) {
+func (p *PgRepo) GetTicketMetaTx(ctx context.Context, tx repository.Transaction, id int) (*domain.TicketMeta, error) {
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
-		return 0, repository.ErrTxMismatch
+		return nil, repository.ErrTxMismatch
 	}
 
-	status, err := p.getTicketStatus(ctx, sqlTx, id, true)
+	status, err := p.getTicketMeta(ctx, sqlTx, id, true)
 	if err != nil {
 		sqlTx.Rollback()
-		return 0, err
+		return nil, err
 	}
 
 	return status, nil

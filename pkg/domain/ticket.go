@@ -17,3 +17,9 @@ type Ticket struct {
 	Created  time.Time
 	Ended    *time.Time
 }
+
+type TicketMeta struct {
+	Status  TicketStatus
+	AgentID *int
+	Ended   *time.Time
+}

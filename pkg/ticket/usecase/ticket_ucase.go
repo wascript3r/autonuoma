@@ -96,7 +96,7 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 		return err
 	}
 
-	status, err := u.ticketRepo.GetTicketStatusTx(c, tx, req.TicketID)
+	meta, err := u.ticketRepo.GetTicketMetaTx(c, tx, req.TicketID)
 	if err != nil {
 		if err == domain.ErrNotFound {
 			return ticket.TicketNotFoundError
@@ -104,10 +104,10 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 		return err
 	}
 
-	if status != domain.CreatedTicketStatus {
-		if status == domain.AcceptedTicketStatus {
+	if meta.Status != domain.CreatedTicketStatus {
+		if meta.Status == domain.AcceptedTicketStatus {
 			return ticket.TicketAlreadyAcceptedError
-		} else if status == domain.EndedTicketStatus {
+		} else if meta.Status == domain.EndedTicketStatus {
 			return ticket.TicketAlreadyEndedError
 		}
 		return ticket.UnknownError
