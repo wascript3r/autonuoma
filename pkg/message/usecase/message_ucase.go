@@ -44,7 +44,7 @@ func (u *Usecase) ClientSend(ctx context.Context, clientID int, req *message.Cli
 	tID, err := u.ticketRepo.GetLastActiveTicketIDTx(c, tx, clientID)
 	if err != nil {
 		if err == domain.ErrNotFound {
-			return nil, ticket.TicketAlreadyEndedError
+			return nil, ticket.NoActiveTicketsError
 		}
 		return nil, err
 	}

@@ -11,3 +11,9 @@ type CreateReq struct {
 type AcceptReq struct {
 	TicketID int `json:"ticketID" validate:"required"`
 }
+
+// EndAgent
+
+type EndAgentReq struct {
+	TicketID int `json:"ticketID" validate:"required"`
+}

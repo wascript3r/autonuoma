@@ -124,3 +124,36 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 
 	return nil
 }
+
+func (u *Usecase) EndClient(ctx context.Context, clientID int) error {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	tx, err := u.ticketRepo.NewTx(c)
+	if err != nil {
+		return err
+	}
+
+	id, err := u.ticketRepo.GetLastActiveTicketIDTx(c, tx, clientID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return ticket.NoActiveTicketsError
+		}
+		return err
+	}
+
+	err = u.ticketRepo.SetEndedTx(c, tx, id, time.Now())
+	if err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *Usecase) EndAgent(ctx context.Context, agentID int, req *ticket.EndAgentReq) error {
+	return nil
+}

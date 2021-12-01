@@ -38,6 +38,7 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, support *middlewar
 	teb.Subscribe(ticket.NewTicketEvent, handler.NewTicketNotification("ticket/notification"))
 	r.HandleMethod("ticket/new", client.Wrap(handler.NewTicket))
 	r.HandleMethod("ticket/accept", support.Wrap(handler.AcceptTicket))
+	r.HandleMethod("ticket/client/end", client.Wrap(handler.EndClientTicket))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -85,6 +86,22 @@ func (w *WSHandler) AcceptTicket(ctx context.Context, s *gows.Socket, r *router.
 	}
 
 	err = w.ticketUcase.Accept(ctx, ss.UserID, req)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, nil)
+}
+
+func (w *WSHandler) EndClientTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+	ss, err := w.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	err = w.ticketUcase.EndClient(ctx, ss.UserID)
 	if err != nil {
 		serveError(s, r, err)
 		return
