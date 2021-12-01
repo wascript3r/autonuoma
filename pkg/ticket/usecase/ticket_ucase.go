@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"html"
 	"time"
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
@@ -65,7 +66,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 	m := &domain.Message{
 		TicketID: t.ID,
 		UserID:   clientID,
-		Content:  req.Message,
+		Content:  html.EscapeString(req.Message),
 		Time:     time.Time{},
 	}
 
