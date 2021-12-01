@@ -125,7 +125,7 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 	return nil
 }
 
-func (u *Usecase) EndClient(ctx context.Context, clientID int) error {
+func (u *Usecase) ClientEnd(ctx context.Context, clientID int) error {
 	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
 	defer cancel()
 
@@ -154,7 +154,7 @@ func (u *Usecase) EndClient(ctx context.Context, clientID int) error {
 	return nil
 }
 
-func (u *Usecase) EndAgent(ctx context.Context, agentID int, req *ticket.EndAgentReq) error {
+func (u *Usecase) AgentEnd(ctx context.Context, agentID int, req *ticket.AgentEndReq) error {
 	if err := u.validate.RawRequest(req); err != nil {
 		return ticket.InvalidInputError
 	}
@@ -197,4 +197,39 @@ func (u *Usecase) EndAgent(ctx context.Context, agentID int, req *ticket.EndAgen
 	}
 
 	return nil
+}
+
+func (u *Usecase) ClientGetMessages(ctx context.Context, clientID int) (*ticket.GetMessagesRes, error) {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	id, err := u.ticketRepo.GetLastActiveTicketID(c, clientID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return nil, ticket.NoActiveTicketsError
+		}
+		return nil, err
+	}
+
+	ms, err := u.messageRepo.GetTicketMessages(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	messages := make([]*ticket.MessageInfo, len(ms))
+	for i, m := range ms {
+		messages[i] = &ticket.MessageInfo{
+			User: &ticket.UserInfo{
+				ID:        m.UserMeta.ID,
+				FirstName: m.UserMeta.FirstName,
+				LastName:  m.UserMeta.LastName,
+			},
+			Content: m.Content,
+			Time:    m.Time,
+		}
+	}
+
+	return &ticket.GetMessagesRes{
+		Messages: messages,
+	}, nil
 }

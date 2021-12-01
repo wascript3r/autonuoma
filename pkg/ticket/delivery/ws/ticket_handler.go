@@ -38,8 +38,9 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.
 	teb.Subscribe(ticket.NewTicketEvent, handler.NewTicketNotification("ticket/notification"))
 	r.HandleMethod("ticket/new", client.Wrap(handler.NewTicket))
 	r.HandleMethod("ticket/accept", agent.Wrap(handler.AcceptTicket))
-	r.HandleMethod("ticket/client/end", client.Wrap(handler.EndClientTicket))
-	r.HandleMethod("ticket/agent/end", agent.Wrap(handler.EndAgentTicket))
+	r.HandleMethod("ticket/client/end", client.Wrap(handler.ClientEndTicket))
+	r.HandleMethod("ticket/agent/end", agent.Wrap(handler.AgentEndTicket))
+	r.HandleMethod("ticket/client/messages", client.Wrap(handler.ClientGetMessages))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -95,14 +96,14 @@ func (w *WSHandler) AcceptTicket(ctx context.Context, s *gows.Socket, r *router.
 	router.WriteRes(s, &r.Method, nil)
 }
 
-func (w *WSHandler) EndClientTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+func (w *WSHandler) ClientEndTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
 	ss, err := w.sessionUcase.LoadCtx(ctx)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
-	err = w.ticketUcase.EndClient(ctx, ss.UserID)
+	err = w.ticketUcase.ClientEnd(ctx, ss.UserID)
 	if err != nil {
 		serveError(s, r, err)
 		return
@@ -111,14 +112,14 @@ func (w *WSHandler) EndClientTicket(ctx context.Context, s *gows.Socket, r *rout
 	router.WriteRes(s, &r.Method, nil)
 }
 
-func (w *WSHandler) EndAgentTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+func (w *WSHandler) AgentEndTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
 	ss, err := w.sessionUcase.LoadCtx(ctx)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
-	req := &ticket.EndAgentReq{}
+	req := &ticket.AgentEndReq{}
 
 	err = json.Unmarshal(r.Params, req)
 	if err != nil {
@@ -126,7 +127,7 @@ func (w *WSHandler) EndAgentTicket(ctx context.Context, s *gows.Socket, r *route
 		return
 	}
 
-	err = w.ticketUcase.EndAgent(ctx, ss.UserID, req)
+	err = w.ticketUcase.AgentEnd(ctx, ss.UserID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return
@@ -148,4 +149,20 @@ func (w *WSHandler) NewTicketNotification(method string) func(ctx context.Contex
 			Params: nil,
 		})
 	}
+}
+
+func (w *WSHandler) ClientGetMessages(ctx context.Context, s *gows.Socket, r *router.Request) {
+	ss, err := w.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	res, err := w.ticketUcase.ClientGetMessages(ctx, ss.UserID)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, res)
 }

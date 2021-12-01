@@ -7,6 +7,7 @@ import (
 type Usecase interface {
 	Create(ctx context.Context, clientID int, req *CreateReq) (int, error)
 	Accept(ctx context.Context, agentID int, req *AcceptReq) error
-	EndClient(ctx context.Context, clientID int) error
-	EndAgent(ctx context.Context, agentID int, req *EndAgentReq) error
+	ClientEnd(ctx context.Context, clientID int) error
+	AgentEnd(ctx context.Context, agentID int, req *AgentEndReq) error
+	ClientGetMessages(ctx context.Context, clientID int) (*GetMessagesRes, error)
 }

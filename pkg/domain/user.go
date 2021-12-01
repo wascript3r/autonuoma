@@ -23,6 +23,7 @@ type User struct {
 }
 
 type UserMeta struct {
-	ID    int
-	Email string
+	ID        int
+	FirstName string
+	LastName  string
 }
