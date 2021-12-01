@@ -6,14 +6,14 @@ type Room int
 
 const (
 	AuthenticatedRoom Room = iota
-	SupportRoom
+	AgentRoom
 )
 
 var ErrInvalidRoomName = errors.New("invalid room name")
 
 func IsValidRoom(r Room) bool {
 	switch r {
-	case AuthenticatedRoom, SupportRoom:
+	case AuthenticatedRoom, AgentRoom:
 		return true
 	}
 	return false

@@ -36,4 +36,9 @@ var (
 		"ticket_not_found",
 		errors.New("ticket not found"),
 	)
+
+	TicketNotOwnedError = errcode.New(
+		"ticket_not_owned",
+		errors.New("ticket is not owned by you"),
+	)
 )

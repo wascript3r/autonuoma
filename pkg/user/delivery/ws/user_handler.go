@@ -18,11 +18,11 @@ import (
 
 var (
 	AuthenticatedRoom = pool.NewRoomConfig("auth", false)
-	SupportRoom       = pool.NewRoomConfig("support", false)
+	AgentRoom         = pool.NewRoomConfig("agent", false)
 
 	RoomConfigs = map[domain.Room]*pool.RoomConfig{
 		domain.AuthenticatedRoom: AuthenticatedRoom,
-		domain.SupportRoom:       SupportRoom,
+		domain.AgentRoom:         AgentRoom,
 	}
 )
 
@@ -71,8 +71,8 @@ func (w *WSHandler) Authenticate(ctx context.Context, s *gows.Socket, r *router.
 	w.sessionMid.SetSession(s, ss)
 
 	w.socketPool.JoinRoom(s, AuthenticatedRoom.Name())
-	if domain.HasRole(ss, domain.SupportRole) {
-		w.socketPool.JoinRoom(s, SupportRoom.Name())
+	if domain.HasRole(ss, domain.AgentRole) {
+		w.socketPool.JoinRoom(s, AgentRoom.Name())
 	}
 
 	w.socketPool.EmitRoom(AuthenticatedRoom.Name(), &router.Response{

@@ -25,7 +25,7 @@ type WSHandler struct {
 	socketPool *pool.Pool
 }
 
-func NewWSHandler(r *router.Router, client *middleware.Stack, support *middleware.Stack, tu ticket.Usecase, su session.Usecase, tm Middleware, teb ticket.EventBus, ru room.Usecase, socketPool *pool.Pool) {
+func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.Stack, tu ticket.Usecase, su session.Usecase, tm Middleware, teb ticket.EventBus, ru room.Usecase, socketPool *pool.Pool) {
 	handler := &WSHandler{
 		ticketUcase:  tu,
 		sessionUcase: su,
@@ -37,8 +37,9 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, support *middlewar
 
 	teb.Subscribe(ticket.NewTicketEvent, handler.NewTicketNotification("ticket/notification"))
 	r.HandleMethod("ticket/new", client.Wrap(handler.NewTicket))
-	r.HandleMethod("ticket/accept", support.Wrap(handler.AcceptTicket))
+	r.HandleMethod("ticket/accept", agent.Wrap(handler.AcceptTicket))
 	r.HandleMethod("ticket/client/end", client.Wrap(handler.EndClientTicket))
+	r.HandleMethod("ticket/agent/end", agent.Wrap(handler.EndAgentTicket))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -110,9 +111,33 @@ func (w *WSHandler) EndClientTicket(ctx context.Context, s *gows.Socket, r *rout
 	router.WriteRes(s, &r.Method, nil)
 }
 
+func (w *WSHandler) EndAgentTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+	ss, err := w.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	req := &ticket.EndAgentReq{}
+
+	err = json.Unmarshal(r.Params, req)
+	if err != nil {
+		router.WriteBadRequest(s, &r.Method)
+		return
+	}
+
+	err = w.ticketUcase.EndAgent(ctx, ss.UserID, req)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, nil)
+}
+
 func (w *WSHandler) NewTicketNotification(method string) func(ctx context.Context) {
 	return func(ctx context.Context) {
-		rName, err := w.roomUcase.GetName(domain.SupportRoom)
+		rName, err := w.roomUcase.GetName(domain.AgentRoom)
 		if err != nil {
 			return
 		}

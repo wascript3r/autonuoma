@@ -155,5 +155,46 @@ func (u *Usecase) EndClient(ctx context.Context, clientID int) error {
 }
 
 func (u *Usecase) EndAgent(ctx context.Context, agentID int, req *ticket.EndAgentReq) error {
+	if err := u.validate.RawRequest(req); err != nil {
+		return ticket.InvalidInputError
+	}
+
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	tx, err := u.ticketRepo.NewTx(c)
+	if err != nil {
+		return err
+	}
+
+	meta, err := u.ticketRepo.GetTicketMetaTx(c, tx, req.TicketID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return ticket.TicketNotFoundError
+		}
+		return err
+	}
+
+	if meta.Status == domain.EndedTicketStatus {
+		return ticket.TicketAlreadyEndedError
+	} else if meta.Status == domain.CreatedTicketStatus {
+		err = u.ticketRepo.SetAgentEndedTx(c, tx, req.TicketID, agentID, time.Now())
+	} else if meta.Status == domain.AcceptedTicketStatus && meta.AgentID != nil {
+		if *meta.AgentID != agentID {
+			return ticket.TicketNotOwnedError
+		}
+		err = u.ticketRepo.SetEndedTx(c, tx, req.TicketID, time.Now())
+	} else {
+		return ticket.UnknownError
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
 	return nil
 }

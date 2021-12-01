@@ -6,7 +6,7 @@ type Role int8
 
 const (
 	UserRole Role = iota + 1
-	SupportRole
+	AgentRole
 	AdminRole
 )
 
