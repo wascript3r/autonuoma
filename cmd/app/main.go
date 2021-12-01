@@ -263,6 +263,7 @@ func main() {
 	_messageWsHandler.NewWSHandler(
 		wsRouter,
 		clientWsStack,
+		agentWsStack,
 
 		messageUcase,
 		sessionUcase,

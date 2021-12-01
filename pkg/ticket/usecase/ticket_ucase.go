@@ -67,7 +67,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 		TicketID: t.ID,
 		UserID:   clientID,
 		Content:  html.EscapeString(req.Message),
-		Time:     time.Time{},
+		Time:     time.Now(),
 	}
 
 	err = u.messageRepo.InsertTx(c, tx, m)

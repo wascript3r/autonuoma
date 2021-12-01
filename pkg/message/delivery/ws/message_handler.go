@@ -20,7 +20,7 @@ type WSHandler struct {
 	socketPool   *pool.Pool
 }
 
-func NewWSHandler(r *router.Router, client *middleware.Stack, mu message.Usecase, su session.Usecase, socketPool *pool.Pool) {
+func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.Stack, mu message.Usecase, su session.Usecase, socketPool *pool.Pool) {
 	handler := &WSHandler{
 		messageUcase: mu,
 		sessionUcase: su,
@@ -28,6 +28,7 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, mu message.Usecase
 	}
 
 	r.HandleMethod("ticket/client/message/new", client.Wrap(handler.NewClientMessage))
+	r.HandleMethod("ticket/agent/message/new", agent.Wrap(handler.NewAgentMessage))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -51,6 +52,30 @@ func (w *WSHandler) NewClientMessage(ctx context.Context, s *gows.Socket, r *rou
 	}
 
 	_, err = w.messageUcase.ClientSend(ctx, ss.UserID, req)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, nil)
+}
+
+func (w *WSHandler) NewAgentMessage(ctx context.Context, s *gows.Socket, r *router.Request) {
+	ss, err := w.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	req := &message.AgentSendReq{}
+
+	err = json.Unmarshal(r.Params, req)
+	if err != nil {
+		router.WriteBadRequest(s, &r.Method)
+		return
+	}
+
+	_, err = w.messageUcase.AgentSend(ctx, ss.UserID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return
