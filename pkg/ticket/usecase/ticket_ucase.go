@@ -14,16 +14,18 @@ type Usecase struct {
 	messageRepo message.Repository
 	ctxTimeout  time.Duration
 
-	validate ticket.Validate
+	ticketEventBus ticket.EventBus
+	validate       ticket.Validate
 }
 
-func New(tr ticket.Repository, mr message.Repository, t time.Duration, v ticket.Validate) *Usecase {
+func New(tr ticket.Repository, mr message.Repository, t time.Duration, teb ticket.EventBus, v ticket.Validate) *Usecase {
 	return &Usecase{
 		ticketRepo:  tr,
 		messageRepo: mr,
 		ctxTimeout:  t,
 
-		validate: v,
+		ticketEventBus: teb,
+		validate:       v,
 	}
 }
 
@@ -75,6 +77,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 	if err = tx.Commit(); err != nil {
 		return 0, err
 	}
+	u.ticketEventBus.Publish(ticket.NewTicketEvent, ctx)
 
 	return t.ID, nil
 }

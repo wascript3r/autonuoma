@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/wascript3r/autonuoma/pkg/domain"
+	"github.com/wascript3r/autonuoma/pkg/room"
 	"github.com/wascript3r/autonuoma/pkg/session"
 	sessionHandler "github.com/wascript3r/autonuoma/pkg/session/delivery/ws"
 	"github.com/wascript3r/autonuoma/pkg/user"
@@ -15,7 +17,13 @@ import (
 )
 
 var (
-	AuthenticatedRoomConfig = pool.NewRoomConfig("auth", false)
+	AuthenticatedRoom = pool.NewRoomConfig("auth", false)
+	SupportRoom       = pool.NewRoomConfig("support", false)
+
+	RoomConfigs = map[domain.Room]*pool.RoomConfig{
+		domain.AuthenticatedRoom: AuthenticatedRoom,
+		domain.SupportRoom:       SupportRoom,
+	}
 )
 
 type WSHandler struct {
@@ -25,7 +33,7 @@ type WSHandler struct {
 	socketPool   *pool.Pool
 }
 
-func NewWSHandler(r *router.Router, notAuth *middleware.Stack, uu user.Usecase, su session.Usecase, sm sessionHandler.Middleware, socketPool *pool.Pool) {
+func NewWSHandler(r *router.Router, notAuth *middleware.Stack, uu user.Usecase, su session.Usecase, sm sessionHandler.Middleware, ru room.Usecase, socketPool *pool.Pool) {
 	handler := &WSHandler{
 		userUcase:    uu,
 		sessionUcase: su,
@@ -33,7 +41,10 @@ func NewWSHandler(r *router.Router, notAuth *middleware.Stack, uu user.Usecase, 
 		socketPool:   socketPool,
 	}
 
-	socketPool.CreateRoom(AuthenticatedRoomConfig)
+	for r, rc := range RoomConfigs {
+		ru.Register(r, rc)
+		socketPool.CreateRoom(rc)
+	}
 
 	r.HandleMethod("user/authenticate", notAuth.Wrap(handler.Authenticate))
 }
@@ -58,9 +69,13 @@ func (w *WSHandler) Authenticate(ctx context.Context, s *gows.Socket, r *router.
 		return
 	}
 	w.sessionMid.SetSession(s, ss)
-	w.socketPool.JoinRoom(s, AuthenticatedRoomConfig.Name)
 
-	w.socketPool.EmitRoom(AuthenticatedRoomConfig.Name, &router.Response{
+	w.socketPool.JoinRoom(s, AuthenticatedRoom.Name())
+	if domain.HasRole(ss, domain.SupportRole) {
+		w.socketPool.JoinRoom(s, SupportRoom.Name())
+	}
+
+	w.socketPool.EmitRoom(AuthenticatedRoom.Name(), &router.Response{
 		Err:    nil,
 		Method: &r.Method,
 		Params: nil,

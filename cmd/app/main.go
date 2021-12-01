@@ -43,9 +43,14 @@ import (
 	// Ticket
 	_ticketWsHandler "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws"
 	_ticketWsMid "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws/middleware"
+	_ticketEventBus "github.com/wascript3r/autonuoma/pkg/ticket/eventbus"
 	_ticketRepo "github.com/wascript3r/autonuoma/pkg/ticket/repository"
 	_ticketUcase "github.com/wascript3r/autonuoma/pkg/ticket/usecase"
 	_ticketValidator "github.com/wascript3r/autonuoma/pkg/ticket/validator"
+
+	// Room
+	_roomRepo "github.com/wascript3r/autonuoma/pkg/room/repository"
+	_roomUcase "github.com/wascript3r/autonuoma/pkg/room/usecase"
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/gocipher/aes"
@@ -177,14 +182,20 @@ func main() {
 	)
 
 	// Ticket
+	ticketEventBus := _ticketEventBus.New(pool, logger)
 	ticketValidator := _ticketValidator.New(messageValidator)
 	ticketUcase := _ticketUcase.New(
 		ticketRepo,
 		messageRepo,
 		Cfg.Database.Postgres.QueryTimeout.Duration,
 
+		ticketEventBus,
 		ticketValidator,
 	)
+
+	// Room
+	roomRepo := _roomRepo.NewMemoryRepo()
+	roomUcase := _roomUcase.New(roomRepo)
 
 	// WS
 	wsEventBus := eventbus.NewWsEventBus(wsPool, logger)
@@ -230,7 +241,7 @@ func main() {
 	// App context
 	ctx, cancel := context.WithCancel(context.Background())
 
-	socketPool, err := _socketPool.New(ctx, wsPool, logger, wsEventBus)
+	socketPool, err := _socketPool.NewPool(ctx, wsPool, logger, wsEventBus)
 	if err != nil {
 		fatalError(err)
 	}
@@ -242,6 +253,8 @@ func main() {
 		userUcase,
 		sessionUcase,
 		sessionWsMid,
+		roomUcase,
+
 		socketPool,
 	)
 	_messageWsHandler.NewWSHandler(
@@ -259,6 +272,9 @@ func main() {
 		ticketUcase,
 		sessionUcase,
 		ticketWsMid,
+		ticketEventBus,
+		roomUcase,
+
 		socketPool,
 	)
 
