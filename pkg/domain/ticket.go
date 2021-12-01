@@ -2,6 +2,14 @@ package domain
 
 import "time"
 
+type TicketStatus int8
+
+const (
+	CreatedTicketStatus TicketStatus = iota
+	AcceptedTicketStatus
+	EndedTicketStatus
+)
+
 type Ticket struct {
 	ID       int
 	ClientID int

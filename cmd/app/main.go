@@ -229,6 +229,9 @@ func main() {
 	clientWsStack := wsMiddleware.New()
 	clientWsStack.Use(sessionWsMid.HasRole(domain.UserRole))
 
+	supportWsStack := wsMiddleware.New()
+	supportWsStack.Use(sessionWsMid.HasRole(domain.SupportRole))
+
 	adminWsStack := wsMiddleware.New()
 	adminWsStack.Use(sessionWsMid.HasRole(domain.AdminRole))
 	adminWsStack.Use(wsLog)
@@ -268,6 +271,7 @@ func main() {
 	_ticketWsHandler.NewWSHandler(
 		wsRouter,
 		clientWsStack,
+		supportWsStack,
 
 		ticketUcase,
 		sessionUcase,

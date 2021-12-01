@@ -25,7 +25,7 @@ type WSHandler struct {
 	socketPool *pool.Pool
 }
 
-func NewWSHandler(r *router.Router, client *middleware.Stack, tu ticket.Usecase, su session.Usecase, tm Middleware, teb ticket.EventBus, ru room.Usecase, socketPool *pool.Pool) {
+func NewWSHandler(r *router.Router, client *middleware.Stack, support *middleware.Stack, tu ticket.Usecase, su session.Usecase, tm Middleware, teb ticket.EventBus, ru room.Usecase, socketPool *pool.Pool) {
 	handler := &WSHandler{
 		ticketUcase:  tu,
 		sessionUcase: su,
@@ -37,6 +37,7 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, tu ticket.Usecase,
 
 	teb.Subscribe(ticket.NewTicketEvent, handler.NewTicketNotification("ticket/notification"))
 	r.HandleMethod("ticket/new", client.Wrap(handler.NewTicket))
+	r.HandleMethod("ticket/accept", support.Wrap(handler.AcceptTicket))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -66,6 +67,30 @@ func (w *WSHandler) NewTicket(ctx context.Context, s *gows.Socket, r *router.Req
 	}
 
 	router.WriteRes(s, &r.Method, tID)
+}
+
+func (w *WSHandler) AcceptTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+	ss, err := w.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	req := &ticket.AcceptReq{}
+
+	err = json.Unmarshal(r.Params, req)
+	if err != nil {
+		router.WriteBadRequest(s, &r.Method)
+		return
+	}
+
+	err = w.ticketUcase.Accept(ctx, ss.UserID, req)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, nil)
 }
 
 func (w *WSHandler) NewTicketNotification(method string) func(ctx context.Context) {

@@ -81,3 +81,45 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 
 	return t.ID, nil
 }
+
+func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq) error {
+	if err := u.validate.RawRequest(req); err != nil {
+		return ticket.InvalidInputError
+	}
+
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	tx, err := u.ticketRepo.NewTx(c)
+	if err != nil {
+		return err
+	}
+
+	status, err := u.ticketRepo.GetTicketStatusTx(c, tx, req.TicketID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return ticket.TicketNotFoundError
+		}
+		return err
+	}
+
+	if status != domain.CreatedTicketStatus {
+		if status == domain.AcceptedTicketStatus {
+			return ticket.TicketAlreadyAcceptedError
+		} else if status == domain.EndedTicketStatus {
+			return ticket.TicketAlreadyEndedError
+		}
+		return ticket.UnknownError
+	}
+
+	err = u.ticketRepo.SetAgentTx(c, tx, req.TicketID, agentID)
+	if err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
