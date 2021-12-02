@@ -12,7 +12,7 @@ import (
 const (
 	insertIfNotExistsSQL = "INSERT INTO vartotojai (vardas, pavardė, el_paštas, gimimo_data, slaptažodis, balansas, asmens_kodas, rolė) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"
 	emailExistsSQL       = "SELECT EXISTS(SELECT 1 FROM vartotojai WHERE el_paštas = $1)"
-	getIDAndPasswordSQL  = "SELECT id, slaptažodis FROM vartotojai WHERE el_paštas = $1"
+	getCredentialsSQL    = "SELECT id, rolė, slaptažodis FROM vartotojai WHERE el_paštas = $1"
 	deductBalanceSQL     = "UPDATE vartotojai SET balansas = balansas - $2 WHERE id = $1"
 	addBalanceSQL        = "UPDATE vartotojai SET balansas = balansas + $2 WHERE id = $1"
 )
@@ -56,18 +56,15 @@ func (p PgRepo) EmailExists(ctx context.Context, email string) (bool, error) {
 	return exists, nil
 }
 
-func (p PgRepo) GetIDAndPassword(ctx context.Context, email string) (int, string, error) {
-	var (
-		id       int
-		password string
-	)
+func (p PgRepo) GetCredentials(ctx context.Context, email string) (*domain.UserCredentials, error) {
+	c := &domain.UserCredentials{}
 
-	err := p.conn.QueryRowContext(ctx, getIDAndPasswordSQL, email).Scan(&id, &password)
+	err := p.conn.QueryRowContext(ctx, getCredentialsSQL, email).Scan(&c.ID, &c.RoleID, &c.Password)
 	if err != nil {
-		return 0, "", pgsql.ParseSQLError(err)
+		return nil, pgsql.ParseSQLError(err)
 	}
 
-	return id, password, nil
+	return c, nil
 }
 
 func (p *PgRepo) deductBalance(ctx context.Context, q pgsql.Querier, id int, value int64) error {

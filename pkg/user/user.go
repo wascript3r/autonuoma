@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
+
+	"github.com/wascript3r/autonuoma/pkg/domain"
 )
 
 type UserInfo struct {
@@ -48,6 +50,11 @@ func (bd BirthDate) MarshalJSON() ([]byte, error) {
 type AuthenticateReq struct {
 	Email    string `json:"email" validate:"required,u_email"`
 	Password string `json:"password" validate:"required,u_password"`
+}
+
+type AuthenticateRes struct {
+	UserID int         `json:"userID"`
+	RoleID domain.Role `json:"roleID"`
 }
 
 // TempToken

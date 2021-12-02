@@ -1,14 +1,19 @@
 package domain
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type Role int8
 
 const (
-	UserRole Role = iota + 1
+	ClientRole Role = iota + 1
 	AgentRole
 	AdminRole
 )
+
+var ErrInvalidUserRole = errors.New("invalid user role")
 
 type User struct {
 	ID        int
@@ -20,6 +25,12 @@ type User struct {
 	Balance   int64
 	PIN       string
 	RoleID    Role
+}
+
+type UserCredentials struct {
+	ID       int
+	RoleID   Role
+	Password string
 }
 
 type UserMeta struct {

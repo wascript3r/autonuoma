@@ -31,4 +31,7 @@ type Repository interface {
 
 	GetTickets(ctx context.Context) ([]*domain.TicketFull, error)
 	GetTicketsTx(ctx context.Context, tx repository.Transaction) ([]*domain.TicketFull, error)
+
+	GetUserTickets(ctx context.Context, userID int) ([]*domain.TicketFull, error)
+	GetUserTicketsTx(ctx context.Context, tx repository.Transaction, userID int) ([]*domain.TicketFull, error)
 }

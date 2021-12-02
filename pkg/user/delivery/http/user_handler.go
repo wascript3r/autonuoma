@@ -75,14 +75,14 @@ func (h *HTTPHandler) AuthenticateUser(w http.ResponseWriter, r *http.Request, _
 		return
 	}
 
-	s, err := h.userUcase.Authenticate(r.Context(), req)
+	s, res, err := h.userUcase.Authenticate(r.Context(), req)
 	if err != nil {
 		serveError(w, err)
 		return
 	}
 	h.sessionMid.SetSessionCookie(w, s)
 
-	httpjson.ServeJSON(w, nil)
+	httpjson.ServeJSON(w, res)
 }
 
 func (h *HTTPHandler) GetToken(ctx context.Context, w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {

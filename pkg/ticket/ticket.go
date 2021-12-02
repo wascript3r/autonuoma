@@ -22,18 +22,18 @@ type AcceptReq struct {
 
 // End
 
-type AgentEndReq struct {
+type EndReq struct {
 	TicketID int `json:"ticketID" validate:"required"`
 }
 
 // GetMessages
 
 type TicketStatus struct {
-	ID    int  `json:"id"`
-	Ended bool `json:"ended"`
+	ID     int                 `json:"id"`
+	Status domain.TicketStatus `json:"status"`
 }
 
-type AgentGetMessagesReq struct {
+type GetMessagesReq struct {
 	TicketID int `json:"ticketID" validate:"required"`
 }
 
