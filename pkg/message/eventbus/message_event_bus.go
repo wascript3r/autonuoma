@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/wascript3r/autonuoma/pkg/ticket"
+	"github.com/wascript3r/autonuoma/pkg/message"
 	"github.com/wascript3r/cryptopay/pkg/logger"
 	"github.com/wascript3r/gopool"
 )
@@ -14,7 +14,7 @@ type EventBus struct {
 	log  logger.Usecase
 
 	mx       *sync.RWMutex
-	handlers map[ticket.Event][]ticket.EventHnd
+	handlers map[message.Event][]message.EventHnd
 }
 
 func New(pool *gopool.Pool, log logger.Usecase) *EventBus {
@@ -23,18 +23,18 @@ func New(pool *gopool.Pool, log logger.Usecase) *EventBus {
 		log:  log,
 
 		mx:       &sync.RWMutex{},
-		handlers: make(map[ticket.Event][]ticket.EventHnd),
+		handlers: make(map[message.Event][]message.EventHnd),
 	}
 }
 
-func (e *EventBus) Subscribe(ev ticket.Event, hnd ticket.EventHnd) {
+func (e *EventBus) Subscribe(ev message.Event, hnd message.EventHnd) {
 	e.mx.Lock()
 	defer e.mx.Unlock()
 
 	e.handlers[ev] = append(e.handlers[ev], hnd)
 }
 
-func (e *EventBus) Publish(ev ticket.Event, ctx context.Context, ticketID int) {
+func (e *EventBus) Publish(ev message.Event, ctx context.Context, tm *message.TicketMessage) {
 	e.mx.RLock()
 	defer e.mx.RUnlock()
 
@@ -50,11 +50,11 @@ func (e *EventBus) Publish(ev ticket.Event, ctx context.Context, ticketID int) {
 	for _, h := range hnds {
 		h := h
 		err := e.pool.Schedule(func() {
-			h(ctx, ticketID)
+			h(ctx, tm)
 			wg.Done()
 		})
 		if err != nil {
-			e.log.Error("Cannot publish ticket %s event because of pool schedule error: %s", ev, err)
+			e.log.Error("Cannot publish message %s event because of pool schedule error: %s", ev, err)
 			wg.Done()
 		}
 	}

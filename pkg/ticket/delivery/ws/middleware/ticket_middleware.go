@@ -1,35 +1,75 @@
 package middleware
 
 import (
-	"github.com/wascript3r/autonuoma/pkg/ticket"
+	"errors"
+	"fmt"
+
 	"github.com/wascript3r/gows"
 	"github.com/wascript3r/gows/pool"
 )
 
-const DefaultRoomKey = "ticket"
+const (
+	DefaultRoomPrefix = "ticket"
+	DefaultSocketKey  = "ticket"
+)
+
+var ErrTicketIDMismatch = errors.New("ticketID type mismatch")
 
 type WSMiddleware struct {
-	roomKey     string
-	ticketUcase ticket.Usecase
+	socketPool *pool.Pool
 }
 
-func NewWSMiddleware(roomKey string, tu ticket.Usecase) *WSMiddleware {
-	return &WSMiddleware{roomKey, tu}
+func NewWSMiddleware(socketPool *pool.Pool) *WSMiddleware {
+	return &WSMiddleware{socketPool}
 }
 
-func (w *WSMiddleware) ExtractRoom(s *gows.Socket) (pool.RoomName, bool) {
-	data, ok := s.GetData(w.roomKey)
-	if !ok {
-		return "", false
+func (w *WSMiddleware) GetRoomName(ticketID int) pool.RoomName {
+	return pool.RoomName(fmt.Sprintf("%s:%d", DefaultRoomPrefix, ticketID))
+}
+
+func (w *WSMiddleware) CreateOrRejoinRoom(s *gows.Socket, ticketID int) error {
+	err := w.LeaveCurrentRoom(s)
+	if err != nil {
+		return err
 	}
-	r, ok := data.(pool.RoomName)
-	return r, ok
+
+	name := w.GetRoomName(ticketID)
+	if !w.socketPool.RoomExists(name) {
+		err := w.socketPool.CreateRoom(pool.NewRoomConfig(name, true))
+		if err != nil {
+			return err
+		}
+	}
+
+	err = w.socketPool.JoinRoom(s, name)
+	if err != nil {
+		return err
+	}
+
+	s.SetData(DefaultSocketKey, ticketID)
+	return nil
 }
 
-func (w *WSMiddleware) SetRoom(s *gows.Socket, name pool.RoomName) {
-	s.SetData(w.roomKey, name)
+func (w *WSMiddleware) LeaveCurrentRoom(s *gows.Socket) error {
+	tID, ok := s.GetData(DefaultSocketKey)
+	if !ok {
+		return nil
+	}
+
+	tIDInt, ok := tID.(int)
+	if !ok {
+		return ErrTicketIDMismatch
+	}
+
+	err := w.socketPool.LeaveRoom(s, w.GetRoomName(tIDInt))
+	if err != nil {
+		return err
+	}
+
+	s.DeleteData(DefaultSocketKey)
+	return nil
 }
 
-func (w *WSMiddleware) DeleteRoom(s *gows.Socket) {
-	s.DeleteData(w.roomKey)
+func (w *WSMiddleware) DeleteRoom(ticketID int) error {
+	return w.socketPool.DeleteRoom(w.GetRoomName(ticketID))
 }

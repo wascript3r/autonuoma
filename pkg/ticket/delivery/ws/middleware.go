@@ -6,7 +6,8 @@ import (
 )
 
 type Middleware interface {
-	ExtractRoom(s *gows.Socket) (pool.RoomName, bool)
-	SetRoom(s *gows.Socket, name pool.RoomName)
-	DeleteRoom(s *gows.Socket)
+	GetRoomName(ticketID int) pool.RoomName
+	CreateOrRejoinRoom(s *gows.Socket, ticketID int) error
+	LeaveCurrentRoom(s *gows.Socket) error
+	DeleteRoom(ticketID int) error
 }

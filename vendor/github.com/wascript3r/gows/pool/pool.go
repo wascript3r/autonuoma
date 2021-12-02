@@ -193,6 +193,13 @@ func (p *Pool) RoomNumSockets(name RoomName) (int, error) {
 	return len(r.sockets), nil
 }
 
+func (p *Pool) NumRooms() int {
+	p.mx.RLock()
+	defer p.mx.RUnlock()
+
+	return len(p.rooms)
+}
+
 func (p *Pool) RoomExists(name RoomName) bool {
 	p.mx.RLock()
 	defer p.mx.RUnlock()
@@ -318,6 +325,9 @@ func (p *Pool) LeaveRoom(s *gows.Socket, name RoomName) error {
 	}
 
 	delete(r.sockets, s.GetUUID())
+	if r.config.deleteWhenEmpty && len(r.sockets) == 0 {
+		delete(p.rooms, name)
+	}
 	return nil
 }
 

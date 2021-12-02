@@ -21,7 +21,11 @@ const (
 
 	getTicketMetaSQL          = "SELECT fk_klientų_aptarnavimo_specialistas, užbaigta FROM užklausos WHERE id = $1"
 	getTicketMetaForUpdateSQL = getTicketMetaSQL + " FOR UPDATE"
+
+	getTicketsSQL = "SELECT u.id, u.fk_klientų_aptarnavimo_specialistas, u.užbaigta, v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN vartotojai v ON (v.id = u.fk_klientas) INNER JOIN (SELECT fk_uzklausa, tekstas, išsiųsta FROM žinutės WHERE id IN (SELECT MIN(id) FROM žinutės GROUP BY fk_uzklausa)) ž ON (ž.fk_uzklausa = u.id) ORDER BY u.id ASC"
 )
+
+type scanFunc func(row pgsql.Row) (*domain.TicketFull, error)
 
 type PgRepo struct {
 	conn *sql.DB
@@ -171,6 +175,16 @@ func (p *PgRepo) GetLastActiveTicketIDTx(ctx context.Context, tx repository.Tran
 	return ticketID, nil
 }
 
+func getStatus(agentID *int, ended *time.Time) domain.TicketStatus {
+	if ended == nil {
+		if agentID == nil {
+			return domain.CreatedTicketStatus
+		}
+		return domain.AcceptedTicketStatus
+	}
+	return domain.EndedTicketStatus
+}
+
 func (p *PgRepo) getTicketMeta(ctx context.Context, q pgsql.Querier, id int, forUpdate bool) (*domain.TicketMeta, error) {
 	var (
 		query   string
@@ -189,19 +203,8 @@ func (p *PgRepo) getTicketMeta(ctx context.Context, q pgsql.Querier, id int, for
 		return nil, pgsql.ParseSQLError(err)
 	}
 
-	var status domain.TicketStatus
-	if ended == nil {
-		if agentID == nil {
-			status = domain.CreatedTicketStatus
-		} else {
-			status = domain.AcceptedTicketStatus
-		}
-	} else {
-		status = domain.EndedTicketStatus
-	}
-
 	return &domain.TicketMeta{
-		Status:  status,
+		Status:  getStatus(agentID, ended),
 		AgentID: agentID,
 		Ended:   ended,
 	}, nil
@@ -224,4 +227,85 @@ func (p *PgRepo) GetTicketMetaTx(ctx context.Context, tx repository.Transaction,
 	}
 
 	return status, nil
+}
+
+func scanRow(row pgsql.Row) (*domain.TicketFull, error) {
+	var (
+		agentID *int
+		ended   *time.Time
+	)
+
+	t := &domain.TicketFull{
+		ID:           0,
+		Status:       0,
+		ClientMeta:   &domain.UserMeta{},
+		FirstMessage: "",
+		Time:         time.Time{},
+	}
+
+	err := row.Scan(
+		&t.ID,
+		&agentID,
+		&ended,
+
+		&t.ClientMeta.ID,
+		&t.ClientMeta.FirstName,
+		&t.ClientMeta.LastName,
+
+		&t.FirstMessage,
+		&t.Time,
+	)
+	if err != nil {
+		return nil, pgsql.ParseSQLError(err)
+	}
+
+	t.Status = getStatus(agentID, ended)
+	return t, nil
+}
+
+func scanRows(rows *sql.Rows, scan scanFunc) ([]*domain.TicketFull, error) {
+	var ts []*domain.TicketFull
+
+	for rows.Next() {
+		m, err := scan(rows)
+		if err != nil {
+			rows.Close()
+			return nil, err
+		}
+		ts = append(ts, m)
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return ts, nil
+}
+
+func (p *PgRepo) getTickets(ctx context.Context, q pgsql.Querier) ([]*domain.TicketFull, error) {
+	rows, err := q.QueryContext(ctx, getTicketsSQL)
+	if err != nil {
+		return nil, err
+	}
+
+	return scanRows(rows, scanRow)
+}
+
+func (p *PgRepo) GetTickets(ctx context.Context) ([]*domain.TicketFull, error) {
+	return p.getTickets(ctx, p.conn)
+}
+
+func (p *PgRepo) GetTicketsTx(ctx context.Context, tx repository.Transaction) ([]*domain.TicketFull, error) {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return nil, repository.ErrTxMismatch
+	}
+
+	ms, err := p.getTickets(ctx, sqlTx)
+	if err != nil {
+		sqlTx.Rollback()
+		return nil, err
+	}
+
+	return ms, nil
 }
