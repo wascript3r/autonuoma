@@ -230,7 +230,7 @@ func main() {
 	notAuthWsStack.Use(sessionWsMid.NotAuthenticated)
 
 	clientWsStack := wsMiddleware.New()
-	clientWsStack.Use(sessionWsMid.HasRole(domain.UserRole))
+	clientWsStack.Use(sessionWsMid.HasRole(domain.ClientRole))
 
 	agentWsStack := wsMiddleware.New()
 	agentWsStack.Use(sessionWsMid.HasRole(domain.AgentRole))

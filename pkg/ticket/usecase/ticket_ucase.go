@@ -129,7 +129,7 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 }
 
 func (u *Usecase) End(ctx context.Context, userID int, role domain.Role, req *ticket.EndReq) error {
-	if role != domain.UserRole && role != domain.AgentRole {
+	if role != domain.ClientRole && role != domain.AgentRole {
 		return domain.ErrInvalidUserRole
 	}
 
@@ -153,7 +153,7 @@ func (u *Usecase) End(ctx context.Context, userID int, role domain.Role, req *ti
 		return err
 	}
 
-	if (role == domain.UserRole && meta.ClientID != userID) || (role == domain.AgentRole && meta.AgentID != nil && *meta.AgentID != userID) {
+	if (role == domain.ClientRole && meta.ClientID != userID) || (role == domain.AgentRole && meta.AgentID != nil && *meta.AgentID != userID) {
 		return ticket.TicketNotOwnedError
 	}
 
@@ -184,7 +184,7 @@ func (u *Usecase) End(ctx context.Context, userID int, role domain.Role, req *ti
 }
 
 func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role, req *ticket.GetMessagesReq) (*ticket.GetMessagesRes, error) {
-	if role != domain.UserRole && role != domain.AgentRole {
+	if role != domain.ClientRole && role != domain.AgentRole {
 		return nil, domain.ErrInvalidUserRole
 	}
 
@@ -203,7 +203,7 @@ func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role,
 		return nil, err
 	}
 
-	if role == domain.UserRole && meta.ClientID != userID {
+	if role == domain.ClientRole && meta.ClientID != userID {
 		return nil, ticket.TicketNotOwnedError
 	} else if !domain.IsValidTicketStatus(meta.Status) {
 		return nil, domain.ErrInvalidTicketStatus
@@ -237,7 +237,7 @@ func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role,
 }
 
 func (u *Usecase) GetTickets(ctx context.Context, userID int, role domain.Role) (*ticket.GetTicketsRes, error) {
-	if role != domain.UserRole && role != domain.AgentRole {
+	if role != domain.ClientRole && role != domain.AgentRole {
 		return nil, domain.ErrInvalidUserRole
 	}
 
@@ -249,7 +249,7 @@ func (u *Usecase) GetTickets(ctx context.Context, userID int, role domain.Role) 
 		err error
 	)
 
-	if role == domain.UserRole {
+	if role == domain.ClientRole {
 		ts, err = u.ticketRepo.GetUserTickets(c, userID)
 	} else {
 		ts, err = u.ticketRepo.GetTickets(c)

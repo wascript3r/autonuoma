@@ -47,7 +47,7 @@ func (u *Usecase) publishNewMessage(ctx context.Context, ticketID int, mf *domai
 }
 
 func (u *Usecase) Send(ctx context.Context, userID int, role domain.Role, req *message.SendReq) error {
-	if role != domain.UserRole && role != domain.AgentRole {
+	if role != domain.ClientRole && role != domain.AgentRole {
 		return domain.ErrInvalidUserRole
 	}
 
@@ -71,7 +71,7 @@ func (u *Usecase) Send(ctx context.Context, userID int, role domain.Role, req *m
 		return err
 	}
 
-	if (role == domain.UserRole && meta.ClientID != userID) || (role == domain.AgentRole && meta.AgentID != nil && *meta.AgentID != userID) {
+	if (role == domain.ClientRole && meta.ClientID != userID) || (role == domain.AgentRole && meta.AgentID != nil && *meta.AgentID != userID) {
 		return ticket.TicketNotOwnedError
 	}
 

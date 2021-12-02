@@ -8,7 +8,7 @@ import (
 type Role int8
 
 const (
-	UserRole Role = iota + 1
+	ClientRole Role = iota + 1
 	AgentRole
 	AdminRole
 )

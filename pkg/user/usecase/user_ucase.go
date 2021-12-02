@@ -58,7 +58,7 @@ func (u *Usecase) Create(ctx context.Context, req *user.CreateReq) error {
 		BirthDate: time.Time(req.BirthDate),
 		Balance:   0,
 		PIN:       req.PIN,
-		RoleID:    domain.UserRole,
+		RoleID:    domain.ClientRole,
 	}
 
 	err = u.userRepo.InsertIfNotExists(c, us)
