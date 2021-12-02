@@ -61,7 +61,13 @@ func (w *WSMiddleware) LeaveCurrentRoom(s *gows.Socket) error {
 		return ErrTicketIDMismatch
 	}
 
-	return w.socketPool.LeaveRoom(s, w.GetRoomName(tIDInt))
+	err := w.socketPool.LeaveRoom(s, w.GetRoomName(tIDInt))
+	if err != nil {
+		return err
+	}
+
+	s.DeleteData(DefaultSocketKey)
+	return nil
 }
 
 func (w *WSMiddleware) DeleteRoom(ticketID int) error {

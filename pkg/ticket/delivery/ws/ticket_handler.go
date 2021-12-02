@@ -159,23 +159,15 @@ func (w *WSHandler) ClientOpenTicket(ctx context.Context, s *gows.Socket, r *rou
 		return
 	}
 
-	err = w.ticketMid.CreateOrRejoinRoom(s, res.Ticket.ID)
-	if err != nil {
-		serveError(s, r, err)
-		return
+	if !res.Ticket.Ended {
+		err = w.ticketMid.CreateOrRejoinRoom(s, res.Ticket.ID)
+		if err != nil {
+			serveError(s, r, err)
+			return
+		}
 	}
 
 	router.WriteRes(s, &r.Method, res)
-}
-
-func (w *WSHandler) CloseTicket(_ context.Context, s *gows.Socket, r *router.Request) {
-	err := w.ticketMid.LeaveCurrentRoom(s)
-	if err != nil {
-		serveError(s, r, err)
-		return
-	}
-
-	router.WriteRes(s, &r.Method, nil)
 }
 
 func (w *WSHandler) AgentOpenTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
@@ -193,13 +185,25 @@ func (w *WSHandler) AgentOpenTicket(ctx context.Context, s *gows.Socket, r *rout
 		return
 	}
 
-	err = w.ticketMid.CreateOrRejoinRoom(s, res.Ticket.ID)
+	if !res.Ticket.Ended {
+		err = w.ticketMid.CreateOrRejoinRoom(s, res.Ticket.ID)
+		if err != nil {
+			serveError(s, r, err)
+			return
+		}
+	}
+
+	router.WriteRes(s, &r.Method, res)
+}
+
+func (w *WSHandler) CloseTicket(_ context.Context, s *gows.Socket, r *router.Request) {
+	err := w.ticketMid.LeaveCurrentRoom(s)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
-	router.WriteRes(s, &r.Method, res)
+	router.WriteRes(s, &r.Method, nil)
 }
 
 func (w *WSHandler) TicketNotification(method string) func(context.Context, int, *message.TicketMessage) {
