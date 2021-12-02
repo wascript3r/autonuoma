@@ -32,9 +32,10 @@ type Ticket struct {
 }
 
 type TicketMeta struct {
-	Status  TicketStatus
-	AgentID *int
-	Ended   *time.Time
+	Status   TicketStatus
+	ClientID int
+	AgentID  *int
+	Ended    *time.Time
 }
 
 type TicketFull struct {

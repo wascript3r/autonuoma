@@ -42,15 +42,20 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.
 	teb.Subscribe(ticket.AcceptedTicketEvent, handler.TicketRoomNotification("ticket/notification/accepted"))
 	teb.Subscribe(ticket.EndedTicketEvent, handler.TicketRoomNotification("ticket/notification/ended"))
 
-	r.HandleMethod("ticket/new", client.Wrap(handler.NewTicket))
-	r.HandleMethod("ticket/accept", agent.Wrap(handler.AcceptTicket))
-	r.HandleMethod("ticket/client/end", client.Wrap(handler.ClientEndTicket))
-	r.HandleMethod("ticket/agent/end", agent.Wrap(handler.AgentEndTicket))
-	r.HandleMethod("ticket/client/open", client.Wrap(handler.ClientOpenTicket))
-	r.HandleMethod("ticket/agent/open", agent.Wrap(handler.AgentOpenTicket))
-	r.HandleMethod("ticket/client/close", client.Wrap(handler.CloseTicket))
-	r.HandleMethod("ticket/agent/close", agent.Wrap(handler.CloseTicket))
-	r.HandleMethod("tickets", agent.Wrap(handler.AllTickets))
+	r.HandleMethod("client/ticket/new", client.Wrap(handler.NewTicket))
+	r.HandleMethod("agent/ticket/accept", agent.Wrap(handler.AcceptTicket))
+
+	r.HandleMethod("client/ticket/end", client.Wrap(handler.EndTicket))
+	r.HandleMethod("agent/ticket/end", agent.Wrap(handler.EndTicket))
+
+	r.HandleMethod("client/ticket/open", client.Wrap(handler.OpenTicket))
+	r.HandleMethod("agent/ticket/open", agent.Wrap(handler.OpenTicket))
+
+	r.HandleMethod("client/ticket/close", client.Wrap(handler.CloseTicket))
+	r.HandleMethod("agent/ticket/close", agent.Wrap(handler.CloseTicket))
+
+	r.HandleMethod("client/tickets", client.Wrap(handler.AllTickets))
+	r.HandleMethod("agent/tickets", agent.Wrap(handler.AllTickets))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -106,30 +111,14 @@ func (w *WSHandler) AcceptTicket(ctx context.Context, s *gows.Socket, r *router.
 	router.WriteRes(s, &r.Method, nil)
 }
 
-func (w *WSHandler) ClientEndTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+func (w *WSHandler) EndTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
 	ss, err := w.sessionUcase.LoadCtx(ctx)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
-	err = w.ticketUcase.ClientEnd(ctx, ss.UserID)
-	if err != nil {
-		serveError(s, r, err)
-		return
-	}
-
-	router.WriteRes(s, &r.Method, nil)
-}
-
-func (w *WSHandler) AgentEndTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
-	ss, err := w.sessionUcase.LoadCtx(ctx)
-	if err != nil {
-		serveError(s, r, err)
-		return
-	}
-
-	req := &ticket.AgentEndReq{}
+	req := &ticket.EndReq{}
 
 	err = json.Unmarshal(r.Params, req)
 	if err != nil {
@@ -137,7 +126,7 @@ func (w *WSHandler) AgentEndTicket(ctx context.Context, s *gows.Socket, r *route
 		return
 	}
 
-	err = w.ticketUcase.AgentEnd(ctx, ss.UserID, req)
+	err = w.ticketUcase.End(ctx, ss.UserID, ss.RoleID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return
@@ -146,46 +135,28 @@ func (w *WSHandler) AgentEndTicket(ctx context.Context, s *gows.Socket, r *route
 	router.WriteRes(s, &r.Method, nil)
 }
 
-func (w *WSHandler) ClientOpenTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
+func (w *WSHandler) OpenTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
 	ss, err := w.sessionUcase.LoadCtx(ctx)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
-	res, err := w.ticketUcase.ClientGetMessages(ctx, ss.UserID)
-	if err != nil {
-		serveError(s, r, err)
-		return
-	}
+	req := &ticket.GetMessagesReq{}
 
-	if !res.Ticket.Ended {
-		err = w.ticketMid.CreateOrRejoinRoom(s, res.Ticket.ID)
-		if err != nil {
-			serveError(s, r, err)
-			return
-		}
-	}
-
-	router.WriteRes(s, &r.Method, res)
-}
-
-func (w *WSHandler) AgentOpenTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
-	req := &ticket.AgentGetMessagesReq{}
-
-	err := json.Unmarshal(r.Params, req)
+	err = json.Unmarshal(r.Params, req)
 	if err != nil {
 		router.WriteBadRequest(s, &r.Method)
 		return
 	}
 
-	res, err := w.ticketUcase.AgentGetMessages(ctx, req)
+	res, err := w.ticketUcase.GetMessages(ctx, ss.UserID, ss.RoleID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
-	if !res.Ticket.Ended {
+	if res.Ticket.Status != domain.EndedTicketStatus {
 		err = w.ticketMid.CreateOrRejoinRoom(s, res.Ticket.ID)
 		if err != nil {
 			serveError(s, r, err)
@@ -207,7 +178,13 @@ func (w *WSHandler) CloseTicket(_ context.Context, s *gows.Socket, r *router.Req
 }
 
 func (w *WSHandler) AllTickets(ctx context.Context, s *gows.Socket, r *router.Request) {
-	res, err := w.ticketUcase.GetTickets(ctx)
+	ss, err := w.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	res, err := w.ticketUcase.GetTickets(ctx, ss.UserID, ss.RoleID)
 	if err != nil {
 		serveError(s, r, err)
 		return
@@ -223,7 +200,7 @@ func (w *WSHandler) TicketNotification(method string) func(context.Context, int)
 			return
 		}
 
-		res, err := w.ticketUcase.GetTickets(ctx)
+		res, err := w.ticketUcase.GetTickets(ctx, 0, domain.AgentRole)
 		if err != nil {
 			return
 		}

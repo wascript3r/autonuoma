@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"html"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/wascript3r/autonuoma/pkg/ticket"
 	"github.com/wascript3r/autonuoma/pkg/user"
 )
+
+var ErrInvalidUserRole = errors.New("invalid user role")
 
 type Usecase struct {
 	ticketRepo  ticket.Repository
@@ -128,37 +131,11 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 	return nil
 }
 
-func (u *Usecase) ClientEnd(ctx context.Context, clientID int) error {
-	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
-	defer cancel()
-
-	tx, err := u.ticketRepo.NewTx(c)
-	if err != nil {
-		return err
+func (u *Usecase) End(ctx context.Context, userID int, role domain.Role, req *ticket.EndReq) error {
+	if role != domain.UserRole && role != domain.AgentRole {
+		return ErrInvalidUserRole
 	}
 
-	id, err := u.ticketRepo.GetLastActiveTicketIDTx(c, tx, clientID)
-	if err != nil {
-		if err == domain.ErrNotFound {
-			return ticket.NoActiveTicketsError
-		}
-		return err
-	}
-
-	err = u.ticketRepo.SetEndedTx(c, tx, id, time.Now())
-	if err != nil {
-		return err
-	}
-
-	if err = tx.Commit(); err != nil {
-		return err
-	}
-
-	u.ticketEventBus.Publish(ticket.EndedTicketEvent, ctx, id)
-	return nil
-}
-
-func (u *Usecase) AgentEnd(ctx context.Context, agentID int, req *ticket.AgentEndReq) error {
 	if err := u.validate.RawRequest(req); err != nil {
 		return ticket.InvalidInputError
 	}
@@ -179,15 +156,20 @@ func (u *Usecase) AgentEnd(ctx context.Context, agentID int, req *ticket.AgentEn
 		return err
 	}
 
+	if (role == domain.UserRole && meta.ClientID != userID) || (role == domain.AgentRole && meta.AgentID != nil && *meta.AgentID != userID) {
+		return ticket.TicketNotOwnedError
+	}
+
 	if meta.Status == domain.EndedTicketStatus {
 		return ticket.TicketAlreadyEndedError
-	} else if meta.Status == domain.CreatedTicketStatus {
-		err = u.ticketRepo.SetAgentEndedTx(c, tx, req.TicketID, agentID, time.Now())
 	} else if meta.Status == domain.AcceptedTicketStatus && meta.AgentID != nil {
-		if *meta.AgentID != agentID {
-			return ticket.TicketNotOwnedError
-		}
 		err = u.ticketRepo.SetEndedTx(c, tx, req.TicketID, time.Now())
+	} else if meta.Status == domain.CreatedTicketStatus {
+		if role == domain.AgentRole {
+			err = u.ticketRepo.SetAgentEndedTx(c, tx, req.TicketID, userID, time.Now())
+		} else {
+			err = u.ticketRepo.SetEndedTx(c, tx, req.TicketID, time.Now())
+		}
 	} else {
 		return domain.ErrInvalidTicketStatus
 	}
@@ -204,8 +186,33 @@ func (u *Usecase) AgentEnd(ctx context.Context, agentID int, req *ticket.AgentEn
 	return nil
 }
 
-func (u *Usecase) getMessages(ctx context.Context, ticketID int, ticketEnded bool) (*ticket.GetMessagesRes, error) {
-	ms, err := u.messageRepo.GetTicketMessages(ctx, ticketID)
+func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role, req *ticket.GetMessagesReq) (*ticket.GetMessagesRes, error) {
+	if role != domain.UserRole && role != domain.AgentRole {
+		return nil, ErrInvalidUserRole
+	}
+
+	if err := u.validate.RawRequest(req); err != nil {
+		return nil, ticket.InvalidInputError
+	}
+
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	meta, err := u.ticketRepo.GetTicketMeta(c, req.TicketID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return nil, ticket.TicketNotFoundError
+		}
+		return nil, err
+	}
+
+	if role == domain.UserRole && meta.ClientID != userID {
+		return nil, ticket.TicketNotOwnedError
+	} else if !domain.IsValidTicketStatus(meta.Status) {
+		return nil, domain.ErrInvalidTicketStatus
+	}
+
+	ms, err := u.messageRepo.GetTicketMessages(ctx, req.TicketID)
 	if err != nil {
 		return nil, err
 	}
@@ -225,57 +232,32 @@ func (u *Usecase) getMessages(ctx context.Context, ticketID int, ticketEnded boo
 
 	return &ticket.GetMessagesRes{
 		Ticket: &ticket.TicketStatus{
-			ID:    ticketID,
-			Ended: ticketEnded,
+			ID:     req.TicketID,
+			Status: meta.Status,
 		},
 		Messages: messages,
 	}, nil
 }
 
-func (u *Usecase) ClientGetMessages(ctx context.Context, clientID int) (*ticket.GetMessagesRes, error) {
-	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
-	defer cancel()
-
-	id, err := u.ticketRepo.GetLastActiveTicketID(c, clientID)
-	if err != nil {
-		if err == domain.ErrNotFound {
-			return nil, ticket.NoActiveTicketsError
-		}
-		return nil, err
-	}
-
-	return u.getMessages(c, id, false)
-}
-
-func (u *Usecase) AgentGetMessages(ctx context.Context, req *ticket.AgentGetMessagesReq) (*ticket.GetMessagesRes, error) {
-	if err := u.validate.RawRequest(req); err != nil {
-		return nil, ticket.InvalidInputError
+func (u *Usecase) GetTickets(ctx context.Context, userID int, role domain.Role) (*ticket.GetTicketsRes, error) {
+	if role != domain.UserRole && role != domain.AgentRole {
+		return nil, ErrInvalidUserRole
 	}
 
 	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
 	defer cancel()
 
-	meta, err := u.ticketRepo.GetTicketMeta(c, req.TicketID)
-	if err != nil {
-		if err == domain.ErrNotFound {
-			return nil, ticket.TicketNotFoundError
-		}
-		return nil, err
+	var (
+		ts  []*domain.TicketFull
+		err error
+	)
+
+	if role == domain.UserRole {
+		ts, err = u.ticketRepo.GetUserTickets(c, userID)
+	} else {
+		ts, err = u.ticketRepo.GetTickets(c)
 	}
 
-	if !domain.IsValidTicketStatus(meta.Status) {
-		return nil, domain.ErrInvalidTicketStatus
-	}
-
-	ticketEnded := meta.Status == domain.EndedTicketStatus
-	return u.getMessages(c, req.TicketID, ticketEnded)
-}
-
-func (u *Usecase) GetTickets(ctx context.Context) (*ticket.GetTicketsRes, error) {
-	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
-	defer cancel()
-
-	ts, err := u.ticketRepo.GetTickets(c)
 	if err != nil {
 		return nil, err
 	}
