@@ -20,7 +20,7 @@ func (e Event) String() string {
 	}
 }
 
-type EventHnd func(ctx context.Context, res *TicketMessage)
+type EventHnd func(ctx context.Context, tm *TicketMessage)
 
 type EventBus interface {
 	Subscribe(Event, EventHnd)

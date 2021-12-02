@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+type UserInfo struct {
+	ID        int    `json:"id"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+}
+
 // Create
 
 type BirthDate time.Time

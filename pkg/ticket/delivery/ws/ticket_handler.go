@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
+	"github.com/wascript3r/autonuoma/pkg/message"
 	"github.com/wascript3r/autonuoma/pkg/room"
 	"github.com/wascript3r/autonuoma/pkg/session"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
@@ -35,13 +36,21 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.
 		socketPool: socketPool,
 	}
 
-	teb.Subscribe(ticket.NewTicketEvent, handler.NewTicketNotification("ticket/notification"))
+	teb.Subscribe(ticket.NewTicketEvent, handler.TicketNotification("ticket/notification"))
+	teb.Subscribe(ticket.AcceptedTicketEvent, handler.TicketNotification("ticket/notification"))
+	teb.Subscribe(ticket.EndedTicketEvent, handler.TicketNotification("ticket/notification"))
+
+	teb.Subscribe(ticket.AcceptedTicketEvent, handler.TicketRoomNotification("ticket/notification/accepted"))
+	teb.Subscribe(ticket.EndedTicketEvent, handler.TicketRoomNotification("ticket/notification/ended"))
+
 	r.HandleMethod("ticket/new", client.Wrap(handler.NewTicket))
 	r.HandleMethod("ticket/accept", agent.Wrap(handler.AcceptTicket))
 	r.HandleMethod("ticket/client/end", client.Wrap(handler.ClientEndTicket))
 	r.HandleMethod("ticket/agent/end", agent.Wrap(handler.AgentEndTicket))
 	r.HandleMethod("ticket/client/open", client.Wrap(handler.ClientOpenTicket))
 	r.HandleMethod("ticket/agent/open", agent.Wrap(handler.AgentOpenTicket))
+	r.HandleMethod("ticket/client/close", client.Wrap(handler.CloseTicket))
+	r.HandleMethod("ticket/agent/close", agent.Wrap(handler.CloseTicket))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -159,6 +168,16 @@ func (w *WSHandler) ClientOpenTicket(ctx context.Context, s *gows.Socket, r *rou
 	router.WriteRes(s, &r.Method, res)
 }
 
+func (w *WSHandler) CloseTicket(_ context.Context, s *gows.Socket, r *router.Request) {
+	err := w.ticketMid.LeaveCurrentRoom(s)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, nil)
+}
+
 func (w *WSHandler) AgentOpenTicket(ctx context.Context, s *gows.Socket, r *router.Request) {
 	req := &ticket.AgentGetMessagesReq{}
 
@@ -183,14 +202,26 @@ func (w *WSHandler) AgentOpenTicket(ctx context.Context, s *gows.Socket, r *rout
 	router.WriteRes(s, &r.Method, res)
 }
 
-func (w *WSHandler) NewTicketNotification(method string) func(context.Context) {
-	return func(ctx context.Context) {
+func (w *WSHandler) TicketNotification(method string) func(context.Context, int, *message.TicketMessage) {
+	return func(ctx context.Context, _ int, tm *message.TicketMessage) {
 		rName, err := w.roomUcase.GetName(domain.AgentRoom)
 		if err != nil {
 			return
 		}
 
 		w.socketPool.EmitRoom(pool.RoomName(rName), &router.Response{
+			Err:    nil,
+			Method: &method,
+			Params: tm,
+		})
+	}
+}
+
+func (w *WSHandler) TicketRoomNotification(method string) func(context.Context, int, *message.TicketMessage) {
+	return func(ctx context.Context, ticketID int, _ *message.TicketMessage) {
+		rName := w.ticketMid.GetRoomName(ticketID)
+
+		w.socketPool.EmitRoom(rName, &router.Response{
 			Err:    nil,
 			Method: &method,
 			Params: nil,

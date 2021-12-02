@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/wascript3r/autonuoma/pkg/message"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
 	"github.com/wascript3r/cryptopay/pkg/logger"
 	"github.com/wascript3r/gopool"
@@ -34,7 +35,7 @@ func (e *EventBus) Subscribe(ev ticket.Event, hnd ticket.EventHnd) {
 	e.handlers[ev] = append(e.handlers[ev], hnd)
 }
 
-func (e *EventBus) Publish(ev ticket.Event, ctx context.Context) {
+func (e *EventBus) Publish(ev ticket.Event, ctx context.Context, ticketID int, tm *message.TicketMessage) {
 	e.mx.RLock()
 	defer e.mx.RUnlock()
 
@@ -50,7 +51,7 @@ func (e *EventBus) Publish(ev ticket.Event, ctx context.Context) {
 	for _, h := range hnds {
 		h := h
 		err := e.pool.Schedule(func() {
-			h(ctx)
+			h(ctx, ticketID, tm)
 			wg.Done()
 		})
 		if err != nil {

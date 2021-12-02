@@ -8,6 +8,7 @@ import (
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/message"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
+	"github.com/wascript3r/autonuoma/pkg/user"
 )
 
 type Usecase struct {
@@ -70,7 +71,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 		Time:     time.Now(),
 	}
 
-	_, err = u.messageRepo.InsertTx(c, tx, m)
+	mf, err := u.messageRepo.InsertTx(c, tx, m)
 	if err != nil {
 		return 0, err
 	}
@@ -78,7 +79,19 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 	if err = tx.Commit(); err != nil {
 		return 0, err
 	}
-	u.ticketEventBus.Publish(ticket.NewTicketEvent, ctx)
+
+	u.ticketEventBus.Publish(ticket.NewTicketEvent, ctx, t.ID, &message.TicketMessage{
+		TicketID: t.ID,
+		MessageInfo: &message.MessageInfo{
+			User: &user.UserInfo{
+				ID:        mf.UserMeta.ID,
+				FirstName: mf.UserMeta.FirstName,
+				LastName:  mf.UserMeta.LastName,
+			},
+			Content: mf.Content,
+			Time:    mf.Time,
+		},
+	})
 
 	return t.ID, nil
 }
@@ -122,6 +135,7 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 		return err
 	}
 
+	u.ticketEventBus.Publish(ticket.AcceptedTicketEvent, ctx, req.TicketID, nil)
 	return nil
 }
 
@@ -151,6 +165,7 @@ func (u *Usecase) ClientEnd(ctx context.Context, clientID int) error {
 		return err
 	}
 
+	u.ticketEventBus.Publish(ticket.EndedTicketEvent, ctx, id, nil)
 	return nil
 }
 
@@ -196,6 +211,7 @@ func (u *Usecase) AgentEnd(ctx context.Context, agentID int, req *ticket.AgentEn
 		return err
 	}
 
+	u.ticketEventBus.Publish(ticket.EndedTicketEvent, ctx, req.TicketID, nil)
 	return nil
 }
 
@@ -205,10 +221,10 @@ func (u *Usecase) getMessages(ctx context.Context, ticketID int, ticketEnded boo
 		return nil, err
 	}
 
-	messages := make([]*ticket.MessageInfo, len(ms))
+	messages := make([]*message.MessageInfo, len(ms))
 	for i, m := range ms {
-		messages[i] = &ticket.MessageInfo{
-			User: &ticket.UserInfo{
+		messages[i] = &message.MessageInfo{
+			User: &user.UserInfo{
 				ID:        m.UserMeta.ID,
 				FirstName: m.UserMeta.FirstName,
 				LastName:  m.UserMeta.LastName,

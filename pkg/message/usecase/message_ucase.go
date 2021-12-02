@@ -8,6 +8,7 @@ import (
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/message"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
+	"github.com/wascript3r/autonuoma/pkg/user"
 )
 
 type Usecase struct {
@@ -33,8 +34,8 @@ func New(mr message.Repository, tr ticket.Repository, t time.Duration, meb messa
 func (u *Usecase) publishNewMessage(ctx context.Context, ticketID int, mf *domain.MessageFull) {
 	u.messageEventBus.Publish(message.NewMessageEvent, ctx, &message.TicketMessage{
 		TicketID: ticketID,
-		MessageInfo: &ticket.MessageInfo{
-			User: &ticket.UserInfo{
+		MessageInfo: &message.MessageInfo{
+			User: &user.UserInfo{
 				ID:        mf.UserMeta.ID,
 				FirstName: mf.UserMeta.FirstName,
 				LastName:  mf.UserMeta.LastName,

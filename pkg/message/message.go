@@ -1,6 +1,10 @@
 package message
 
-import "github.com/wascript3r/autonuoma/pkg/ticket"
+import (
+	"time"
+
+	"github.com/wascript3r/autonuoma/pkg/user"
+)
 
 // Send
 
@@ -13,7 +17,13 @@ type AgentSendReq struct {
 	Message  string `json:"message" validate:"required,m_message"`
 }
 
+type MessageInfo struct {
+	User    *user.UserInfo `json:"user"`
+	Content string         `json:"content"`
+	Time    time.Time      `json:"time"`
+}
+
 type TicketMessage struct {
 	TicketID int `json:"ticketID"`
-	*ticket.MessageInfo
+	*MessageInfo
 }

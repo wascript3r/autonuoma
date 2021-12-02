@@ -89,13 +89,13 @@ func (w *WSHandler) AgentNewMessage(ctx context.Context, s *gows.Socket, r *rout
 }
 
 func (w *WSHandler) NewMessageNotification(method string) func(context.Context, *message.TicketMessage) {
-	return func(ctx context.Context, res *message.TicketMessage) {
-		rName := w.ticketMid.GetRoomName(res.TicketID)
+	return func(ctx context.Context, tm *message.TicketMessage) {
+		rName := w.ticketMid.GetRoomName(tm.TicketID)
 
 		w.socketPool.EmitRoom(rName, &router.Response{
 			Err:    nil,
 			Method: &method,
-			Params: res,
+			Params: tm,
 		})
 	}
 }

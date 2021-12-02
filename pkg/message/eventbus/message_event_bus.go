@@ -34,7 +34,7 @@ func (e *EventBus) Subscribe(ev message.Event, hnd message.EventHnd) {
 	e.handlers[ev] = append(e.handlers[ev], hnd)
 }
 
-func (e *EventBus) Publish(ev message.Event, ctx context.Context, res *message.TicketMessage) {
+func (e *EventBus) Publish(ev message.Event, ctx context.Context, tm *message.TicketMessage) {
 	e.mx.RLock()
 	defer e.mx.RUnlock()
 
@@ -50,11 +50,11 @@ func (e *EventBus) Publish(ev message.Event, ctx context.Context, res *message.T
 	for _, h := range hnds {
 		h := h
 		err := e.pool.Schedule(func() {
-			h(ctx, res)
+			h(ctx, tm)
 			wg.Done()
 		})
 		if err != nil {
-			e.log.Error("Cannot publish ticket %s event because of pool schedule error: %s", ev, err)
+			e.log.Error("Cannot publish message %s event because of pool schedule error: %s", ev, err)
 			wg.Done()
 		}
 	}
