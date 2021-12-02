@@ -2,8 +2,6 @@ package ticket
 
 import (
 	"context"
-
-	"github.com/wascript3r/autonuoma/pkg/message"
 )
 
 type Event uint32
@@ -28,9 +26,9 @@ func (e Event) String() string {
 	}
 }
 
-type EventHnd func(ctx context.Context, ticketID int, tm *message.TicketMessage)
+type EventHnd func(ctx context.Context, ticketID int)
 
 type EventBus interface {
 	Subscribe(Event, EventHnd)
-	Publish(Event, context.Context, int, *message.TicketMessage)
+	Publish(Event, context.Context, int)
 }

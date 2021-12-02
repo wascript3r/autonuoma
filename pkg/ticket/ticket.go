@@ -1,6 +1,12 @@
 package ticket
 
-import "github.com/wascript3r/autonuoma/pkg/message"
+import (
+	"time"
+
+	"github.com/wascript3r/autonuoma/pkg/domain"
+	"github.com/wascript3r/autonuoma/pkg/message"
+	"github.com/wascript3r/autonuoma/pkg/user"
+)
 
 // Create
 
@@ -22,7 +28,7 @@ type AgentEndReq struct {
 
 // GetMessages
 
-type TicketInfo struct {
+type TicketStatus struct {
 	ID    int  `json:"id"`
 	Ended bool `json:"ended"`
 }
@@ -32,6 +38,20 @@ type AgentGetMessagesReq struct {
 }
 
 type GetMessagesRes struct {
-	Ticket   *TicketInfo            `json:"ticket"`
+	Ticket   *TicketStatus          `json:"ticket"`
 	Messages []*message.MessageInfo `json:"messages"`
+}
+
+// GetTickets
+
+type TicketInfo struct {
+	ID           int                 `json:"id"`
+	Status       domain.TicketStatus `json:"status"`
+	Client       *user.UserInfo      `json:"client"`
+	FirstMessage string              `json:"firstMessage"`
+	Time         time.Time           `json:"time"`
+}
+
+type GetTicketsRes struct {
+	Tickets []*TicketInfo `json:"tickets"`
 }

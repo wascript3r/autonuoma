@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
-	"github.com/wascript3r/autonuoma/pkg/message"
 	"github.com/wascript3r/autonuoma/pkg/room"
 	"github.com/wascript3r/autonuoma/pkg/session"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
@@ -51,6 +50,7 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.
 	r.HandleMethod("ticket/agent/open", agent.Wrap(handler.AgentOpenTicket))
 	r.HandleMethod("ticket/client/close", client.Wrap(handler.CloseTicket))
 	r.HandleMethod("ticket/agent/close", agent.Wrap(handler.CloseTicket))
+	r.HandleMethod("tickets", agent.Wrap(handler.AllTickets))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -206,9 +206,24 @@ func (w *WSHandler) CloseTicket(_ context.Context, s *gows.Socket, r *router.Req
 	router.WriteRes(s, &r.Method, nil)
 }
 
-func (w *WSHandler) TicketNotification(method string) func(context.Context, int, *message.TicketMessage) {
-	return func(ctx context.Context, _ int, tm *message.TicketMessage) {
+func (w *WSHandler) AllTickets(ctx context.Context, s *gows.Socket, r *router.Request) {
+	res, err := w.ticketUcase.GetTickets(ctx)
+	if err != nil {
+		serveError(s, r, err)
+		return
+	}
+
+	router.WriteRes(s, &r.Method, res)
+}
+
+func (w *WSHandler) TicketNotification(method string) func(context.Context, int) {
+	return func(ctx context.Context, _ int) {
 		rName, err := w.roomUcase.GetName(domain.AgentRoom)
+		if err != nil {
+			return
+		}
+
+		res, err := w.ticketUcase.GetTickets(ctx)
 		if err != nil {
 			return
 		}
@@ -216,13 +231,13 @@ func (w *WSHandler) TicketNotification(method string) func(context.Context, int,
 		w.socketPool.EmitRoom(pool.RoomName(rName), &router.Response{
 			Err:    nil,
 			Method: &method,
-			Params: tm,
+			Params: res,
 		})
 	}
 }
 
-func (w *WSHandler) TicketRoomNotification(method string) func(context.Context, int, *message.TicketMessage) {
-	return func(ctx context.Context, ticketID int, _ *message.TicketMessage) {
+func (w *WSHandler) TicketRoomNotification(method string) func(context.Context, int) {
+	return func(ctx context.Context, ticketID int) {
 		rName := w.ticketMid.GetRoomName(ticketID)
 
 		w.socketPool.EmitRoom(rName, &router.Response{

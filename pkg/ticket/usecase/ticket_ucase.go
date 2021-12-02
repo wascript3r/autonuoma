@@ -71,7 +71,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 		Time:     time.Now(),
 	}
 
-	mf, err := u.messageRepo.InsertTx(c, tx, m)
+	_, err = u.messageRepo.InsertTx(c, tx, m)
 	if err != nil {
 		return 0, err
 	}
@@ -80,18 +80,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 		return 0, err
 	}
 
-	u.ticketEventBus.Publish(ticket.NewTicketEvent, ctx, t.ID, &message.TicketMessage{
-		TicketID: t.ID,
-		MessageInfo: &message.MessageInfo{
-			User: &user.UserInfo{
-				ID:        mf.UserMeta.ID,
-				FirstName: mf.UserMeta.FirstName,
-				LastName:  mf.UserMeta.LastName,
-			},
-			Content: mf.Content,
-			Time:    mf.Time,
-		},
-	})
+	u.ticketEventBus.Publish(ticket.NewTicketEvent, ctx, t.ID)
 
 	return t.ID, nil
 }
@@ -135,7 +124,7 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 		return err
 	}
 
-	u.ticketEventBus.Publish(ticket.AcceptedTicketEvent, ctx, req.TicketID, nil)
+	u.ticketEventBus.Publish(ticket.AcceptedTicketEvent, ctx, req.TicketID)
 	return nil
 }
 
@@ -165,7 +154,7 @@ func (u *Usecase) ClientEnd(ctx context.Context, clientID int) error {
 		return err
 	}
 
-	u.ticketEventBus.Publish(ticket.EndedTicketEvent, ctx, id, nil)
+	u.ticketEventBus.Publish(ticket.EndedTicketEvent, ctx, id)
 	return nil
 }
 
@@ -211,7 +200,7 @@ func (u *Usecase) AgentEnd(ctx context.Context, agentID int, req *ticket.AgentEn
 		return err
 	}
 
-	u.ticketEventBus.Publish(ticket.EndedTicketEvent, ctx, req.TicketID, nil)
+	u.ticketEventBus.Publish(ticket.EndedTicketEvent, ctx, req.TicketID)
 	return nil
 }
 
@@ -235,7 +224,7 @@ func (u *Usecase) getMessages(ctx context.Context, ticketID int, ticketEnded boo
 	}
 
 	return &ticket.GetMessagesRes{
-		Ticket: &ticket.TicketInfo{
+		Ticket: &ticket.TicketStatus{
 			ID:    ticketID,
 			Ended: ticketEnded,
 		},
@@ -280,4 +269,33 @@ func (u *Usecase) AgentGetMessages(ctx context.Context, req *ticket.AgentGetMess
 
 	ticketEnded := meta.Status == domain.EndedTicketStatus
 	return u.getMessages(c, req.TicketID, ticketEnded)
+}
+
+func (u *Usecase) GetTickets(ctx context.Context) (*ticket.GetTicketsRes, error) {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	ts, err := u.ticketRepo.GetTickets(c)
+	if err != nil {
+		return nil, err
+	}
+
+	tickets := make([]*ticket.TicketInfo, len(ts))
+	for i, t := range ts {
+		tickets[i] = &ticket.TicketInfo{
+			ID:     t.ID,
+			Status: t.Status,
+			Client: &user.UserInfo{
+				ID:        t.ClientMeta.ID,
+				FirstName: t.ClientMeta.FirstName,
+				LastName:  t.ClientMeta.LastName,
+			},
+			FirstMessage: t.FirstMessage,
+			Time:         t.Time,
+		}
+	}
+
+	return &ticket.GetTicketsRes{
+		Tickets: tickets,
+	}, nil
 }

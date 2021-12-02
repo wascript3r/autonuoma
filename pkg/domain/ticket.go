@@ -36,3 +36,11 @@ type TicketMeta struct {
 	AgentID *int
 	Ended   *time.Time
 }
+
+type TicketFull struct {
+	ID           int
+	Status       TicketStatus
+	ClientMeta   *UserMeta
+	FirstMessage string
+	Time         time.Time
+}
