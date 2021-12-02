@@ -9,7 +9,7 @@ require (
 	github.com/wascript3r/cryptopay v0.0.7
 	github.com/wascript3r/gocipher v0.0.0-20201105141458-6510a149f009
 	github.com/wascript3r/gopool v0.0.0-20200227213539-8fa9e794e69d
-	github.com/wascript3r/gows v0.0.0-20211202124509-e4ef546f2f87
+	github.com/wascript3r/gows v0.0.0-20211202125347-6893638807a6
 	github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99
 )
 
