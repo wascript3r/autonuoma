@@ -31,8 +31,8 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.
 	}
 
 	meb.Subscribe(message.NewMessageEvent, handler.NewMessageNotification("message/notification"))
-	r.HandleMethod("ticket/client/message/new", client.Wrap(handler.ClientNewMessage))
-	r.HandleMethod("ticket/agent/message/new", agent.Wrap(handler.AgentNewMessage))
+	r.HandleMethod("client/ticket/message/new", client.Wrap(handler.NewMessage))
+	r.HandleMethod("agent/ticket/message/new", agent.Wrap(handler.NewMessage))
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
@@ -40,14 +40,14 @@ func serveError(s *gows.Socket, r *router.Request, err error) {
 	router.WriteErr(s, code, &r.Method)
 }
 
-func (w *WSHandler) ClientNewMessage(ctx context.Context, s *gows.Socket, r *router.Request) {
+func (w *WSHandler) NewMessage(ctx context.Context, s *gows.Socket, r *router.Request) {
 	ss, err := w.sessionUcase.LoadCtx(ctx)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
-	req := &message.ClientSendReq{}
+	req := &message.SendReq{}
 
 	err = json.Unmarshal(r.Params, req)
 	if err != nil {
@@ -55,31 +55,7 @@ func (w *WSHandler) ClientNewMessage(ctx context.Context, s *gows.Socket, r *rou
 		return
 	}
 
-	err = w.messageUcase.ClientSend(ctx, ss.UserID, req)
-	if err != nil {
-		serveError(s, r, err)
-		return
-	}
-
-	router.WriteRes(s, &r.Method, nil)
-}
-
-func (w *WSHandler) AgentNewMessage(ctx context.Context, s *gows.Socket, r *router.Request) {
-	ss, err := w.sessionUcase.LoadCtx(ctx)
-	if err != nil {
-		serveError(s, r, err)
-		return
-	}
-
-	req := &message.AgentSendReq{}
-
-	err = json.Unmarshal(r.Params, req)
-	if err != nil {
-		router.WriteBadRequest(s, &r.Method)
-		return
-	}
-
-	err = w.messageUcase.AgentSend(ctx, ss.UserID, req)
+	err = w.messageUcase.Send(ctx, ss.UserID, ss.RoleID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return

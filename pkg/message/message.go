@@ -8,11 +8,7 @@ import (
 
 // Send
 
-type ClientSendReq struct {
-	Message string `json:"message" validate:"required,m_message"`
-}
-
-type AgentSendReq struct {
+type SendReq struct {
 	TicketID int    `json:"ticketID" validate:"required"`
 	Message  string `json:"message" validate:"required,m_message"`
 }

@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type Role int8
 
@@ -9,6 +12,8 @@ const (
 	AgentRole
 	AdminRole
 )
+
+var ErrInvalidUserRole = errors.New("invalid user role")
 
 type User struct {
 	ID        int

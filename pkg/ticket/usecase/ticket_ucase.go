@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"html"
 	"time"
 
@@ -11,8 +10,6 @@ import (
 	"github.com/wascript3r/autonuoma/pkg/ticket"
 	"github.com/wascript3r/autonuoma/pkg/user"
 )
-
-var ErrInvalidUserRole = errors.New("invalid user role")
 
 type Usecase struct {
 	ticketRepo  ticket.Repository
@@ -133,7 +130,7 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 
 func (u *Usecase) End(ctx context.Context, userID int, role domain.Role, req *ticket.EndReq) error {
 	if role != domain.UserRole && role != domain.AgentRole {
-		return ErrInvalidUserRole
+		return domain.ErrInvalidUserRole
 	}
 
 	if err := u.validate.RawRequest(req); err != nil {
@@ -188,7 +185,7 @@ func (u *Usecase) End(ctx context.Context, userID int, role domain.Role, req *ti
 
 func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role, req *ticket.GetMessagesReq) (*ticket.GetMessagesRes, error) {
 	if role != domain.UserRole && role != domain.AgentRole {
-		return nil, ErrInvalidUserRole
+		return nil, domain.ErrInvalidUserRole
 	}
 
 	if err := u.validate.RawRequest(req); err != nil {
@@ -241,7 +238,7 @@ func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role,
 
 func (u *Usecase) GetTickets(ctx context.Context, userID int, role domain.Role) (*ticket.GetTicketsRes, error) {
 	if role != domain.UserRole && role != domain.AgentRole {
-		return nil, ErrInvalidUserRole
+		return nil, domain.ErrInvalidUserRole
 	}
 
 	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)

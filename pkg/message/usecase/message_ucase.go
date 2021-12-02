@@ -46,48 +46,11 @@ func (u *Usecase) publishNewMessage(ctx context.Context, ticketID int, mf *domai
 	})
 }
 
-func (u *Usecase) ClientSend(ctx context.Context, clientID int, req *message.ClientSendReq) error {
-	if err := u.validate.RawRequest(req); err != nil {
-		return ticket.InvalidInputError
+func (u *Usecase) Send(ctx context.Context, userID int, role domain.Role, req *message.SendReq) error {
+	if role != domain.UserRole && role != domain.AgentRole {
+		return domain.ErrInvalidUserRole
 	}
 
-	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
-	defer cancel()
-
-	tx, err := u.messageRepo.NewTx(c)
-	if err != nil {
-		return err
-	}
-
-	tID, err := u.ticketRepo.GetLastActiveTicketIDTx(c, tx, clientID)
-	if err != nil {
-		if err == domain.ErrNotFound {
-			return ticket.NoActiveTicketsError
-		}
-		return err
-	}
-
-	m := &domain.Message{
-		TicketID: tID,
-		UserID:   clientID,
-		Content:  html.EscapeString(req.Message),
-		Time:     time.Now(),
-	}
-
-	mf, err := u.messageRepo.InsertTx(c, tx, m)
-	if err != nil {
-		return err
-	}
-
-	if err = tx.Commit(); err != nil {
-		return err
-	}
-
-	u.publishNewMessage(ctx, tID, mf)
-	return nil
-}
-
-func (u *Usecase) AgentSend(ctx context.Context, agentID int, req *message.AgentSendReq) error {
 	if err := u.validate.RawRequest(req); err != nil {
 		return ticket.InvalidInputError
 	}
@@ -108,19 +71,23 @@ func (u *Usecase) AgentSend(ctx context.Context, agentID int, req *message.Agent
 		return err
 	}
 
+	if (role == domain.UserRole && meta.ClientID != userID) || (role == domain.AgentRole && meta.AgentID != nil && *meta.AgentID != userID) {
+		return ticket.TicketNotOwnedError
+	}
+
 	if meta.Status == domain.EndedTicketStatus {
 		return ticket.TicketAlreadyEndedError
 	} else if meta.Status == domain.CreatedTicketStatus {
-		return ticket.TicketNotAcceptedError
+		if role == domain.AgentRole {
+			return ticket.TicketNotAcceptedError
+		}
 	} else if meta.Status != domain.AcceptedTicketStatus || meta.AgentID == nil {
 		return domain.ErrInvalidTicketStatus
-	} else if *meta.AgentID != agentID {
-		return ticket.TicketNotOwnedError
 	}
 
 	m := &domain.Message{
 		TicketID: req.TicketID,
-		UserID:   agentID,
+		UserID:   userID,
 		Content:  html.EscapeString(req.Message),
 		Time:     time.Now(),
 	}
