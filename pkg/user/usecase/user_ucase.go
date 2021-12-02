@@ -69,28 +69,38 @@ func (u *Usecase) Create(ctx context.Context, req *user.CreateReq) error {
 	return nil
 }
 
-func (u *Usecase) Authenticate(ctx context.Context, req *user.AuthenticateReq) (*domain.Session, error) {
+func (u *Usecase) Authenticate(ctx context.Context, req *user.AuthenticateReq) (*domain.Session, *user.AuthenticateRes, error) {
 	if err := u.validate.RawRequest(req); err != nil {
-		return nil, user.InvalidInputError
+		return nil, nil, user.InvalidInputError
 	}
 
 	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
 	defer cancel()
 
-	userID, hash, err := u.userRepo.GetIDAndPassword(c, req.Email)
+	credentials, err := u.userRepo.GetCredentials(c, req.Email)
 	if err != nil {
 		if err == domain.ErrNotFound {
-			return nil, user.InvalidCredentialsError
+			return nil, nil, user.InvalidCredentialsError
 		}
-		return nil, err
+		return nil, nil, err
 	}
 
-	err = u.pwHasher.Validate(hash, req.Password)
+	err = u.pwHasher.Validate(credentials.Password, req.Password)
 	if err != nil {
-		return nil, user.InvalidCredentialsError
+		return nil, nil, user.InvalidCredentialsError
 	}
 
-	return u.sessionUcase.Create(ctx, userID)
+	s, err := u.sessionUcase.Create(ctx, credentials.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	res := &user.AuthenticateRes{
+		UserID: credentials.ID,
+		RoleID: credentials.RoleID,
+	}
+
+	return s, res, nil
 }
 
 func (u *Usecase) GetTempToken(ss *domain.Session) (*user.TempToken, error) {

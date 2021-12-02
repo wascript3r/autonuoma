@@ -22,6 +22,12 @@ type User struct {
 	RoleID    Role
 }
 
+type UserCredentials struct {
+	ID       int
+	RoleID   Role
+	Password string
+}
+
 type UserMeta struct {
 	ID        int
 	FirstName string
