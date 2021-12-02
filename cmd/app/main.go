@@ -36,6 +36,7 @@ import (
 
 	// Message
 	_messageWsHandler "github.com/wascript3r/autonuoma/pkg/message/delivery/ws"
+	_messageEventBus "github.com/wascript3r/autonuoma/pkg/message/eventbus"
 	_messageRepo "github.com/wascript3r/autonuoma/pkg/message/repository"
 	_messageUcase "github.com/wascript3r/autonuoma/pkg/message/usecase"
 	_messageValidator "github.com/wascript3r/autonuoma/pkg/message/validator"
@@ -172,12 +173,14 @@ func main() {
 	ticketRepo := _ticketRepo.NewPgRepo(dbConn)
 
 	// Message
+	messageEventBus := _messageEventBus.New(pool, logger)
 	messageValidator := _messageValidator.New()
 	messageUcase := _messageUcase.New(
 		messageRepo,
 		ticketRepo,
 		Cfg.Database.Postgres.QueryTimeout.Duration,
 
+		messageEventBus,
 		messageValidator,
 	)
 
@@ -236,11 +239,6 @@ func main() {
 	adminWsStack.Use(sessionWsMid.HasRole(domain.AdminRole))
 	adminWsStack.Use(wsLog)
 
-	ticketWsMid := _ticketWsMid.NewWSMiddleware(
-		_ticketWsMid.DefaultRoomKey,
-		ticketUcase,
-	)
-
 	// App context
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -248,6 +246,8 @@ func main() {
 	if err != nil {
 		fatalError(err)
 	}
+
+	ticketWsMid := _ticketWsMid.NewWSMiddleware(socketPool)
 
 	_userWsHandler.NewWSHandler(
 		wsRouter,
@@ -266,7 +266,10 @@ func main() {
 		agentWsStack,
 
 		messageUcase,
+		messageEventBus,
 		sessionUcase,
+		ticketWsMid,
+
 		socketPool,
 	)
 	_ticketWsHandler.NewWSHandler(
@@ -275,9 +278,9 @@ func main() {
 		agentWsStack,
 
 		ticketUcase,
-		sessionUcase,
-		ticketWsMid,
 		ticketEventBus,
+		ticketWsMid,
+		sessionUcase,
 		roomUcase,
 
 		socketPool,

@@ -70,7 +70,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 		Time:     time.Now(),
 	}
 
-	err = u.messageRepo.InsertTx(c, tx, m)
+	_, err = u.messageRepo.InsertTx(c, tx, m)
 	if err != nil {
 		return 0, err
 	}
@@ -219,8 +219,11 @@ func (u *Usecase) getMessages(ctx context.Context, ticketID int, ticketEnded boo
 	}
 
 	return &ticket.GetMessagesRes{
-		TicketEnded: ticketEnded,
-		Messages:    messages,
+		Ticket: &ticket.TicketInfo{
+			ID:    ticketID,
+			Ended: ticketEnded,
+		},
+		Messages: messages,
 	}, nil
 }
 

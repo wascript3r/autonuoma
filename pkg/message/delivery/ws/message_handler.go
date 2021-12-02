@@ -6,6 +6,7 @@ import (
 
 	"github.com/wascript3r/autonuoma/pkg/message"
 	"github.com/wascript3r/autonuoma/pkg/session"
+	ticketHandler "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws"
 	"github.com/wascript3r/autonuoma/pkg/user"
 	"github.com/wascript3r/cryptopay/pkg/errcode"
 	"github.com/wascript3r/gows"
@@ -17,16 +18,19 @@ import (
 type WSHandler struct {
 	messageUcase message.Usecase
 	sessionUcase session.Usecase
+	ticketMid    ticketHandler.Middleware
 	socketPool   *pool.Pool
 }
 
-func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.Stack, mu message.Usecase, su session.Usecase, socketPool *pool.Pool) {
+func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.Stack, mu message.Usecase, meb message.EventBus, su session.Usecase, tm ticketHandler.Middleware, socketPool *pool.Pool) {
 	handler := &WSHandler{
 		messageUcase: mu,
 		sessionUcase: su,
+		ticketMid:    tm,
 		socketPool:   socketPool,
 	}
 
+	meb.Subscribe(message.NewMessageEvent, handler.NewMessageNotification("message/notification"))
 	r.HandleMethod("ticket/client/message/new", client.Wrap(handler.ClientNewMessage))
 	r.HandleMethod("ticket/agent/message/new", agent.Wrap(handler.AgentNewMessage))
 }
@@ -51,7 +55,7 @@ func (w *WSHandler) ClientNewMessage(ctx context.Context, s *gows.Socket, r *rou
 		return
 	}
 
-	_, err = w.messageUcase.ClientSend(ctx, ss.UserID, req)
+	err = w.messageUcase.ClientSend(ctx, ss.UserID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return
@@ -75,11 +79,23 @@ func (w *WSHandler) AgentNewMessage(ctx context.Context, s *gows.Socket, r *rout
 		return
 	}
 
-	_, err = w.messageUcase.AgentSend(ctx, ss.UserID, req)
+	err = w.messageUcase.AgentSend(ctx, ss.UserID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return
 	}
 
 	router.WriteRes(s, &r.Method, nil)
+}
+
+func (w *WSHandler) NewMessageNotification(method string) func(context.Context, *message.TicketMessage) {
+	return func(ctx context.Context, res *message.TicketMessage) {
+		rName := w.ticketMid.GetRoomName(res.TicketID)
+
+		w.socketPool.EmitRoom(rName, &router.Response{
+			Err:    nil,
+			Method: &method,
+			Params: res,
+		})
+	}
 }

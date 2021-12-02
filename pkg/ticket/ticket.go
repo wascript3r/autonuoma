@@ -1,6 +1,8 @@
 package ticket
 
-import "time"
+import (
+	"time"
+)
 
 // Create
 
@@ -34,11 +36,16 @@ type MessageInfo struct {
 	Time    time.Time `json:"time"`
 }
 
+type TicketInfo struct {
+	ID    int  `json:"id"`
+	Ended bool `json:"ended"`
+}
+
 type AgentGetMessagesReq struct {
 	TicketID int `json:"ticketID" validate:"required"`
 }
 
 type GetMessagesRes struct {
-	TicketEnded bool           `json:"ticketEnded"`
-	Messages    []*MessageInfo `json:"messages"`
+	Ticket   *TicketInfo    `json:"ticket"`
+	Messages []*MessageInfo `json:"messages"`
 }

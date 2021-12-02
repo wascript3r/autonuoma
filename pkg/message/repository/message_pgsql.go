@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	insertSQL            = "INSERT INTO žinutės (fk_uzklausa, fk_vartotojas, tekstas, išsiųsta) VALUES ($1, $2, $3, $4) RETURNING id"
+	insertSQL            = "WITH inserted AS (INSERT INTO žinutės (fk_uzklausa, fk_vartotojas, tekstas, išsiųsta) VALUES ($1, $2, $3, $4) RETURNING id, fk_vartotojas) SELECT i.id, v.id, v.vardas, v.pavardė FROM inserted i INNER JOIN vartotojai v ON (v.id = i.fk_vartotojas)"
 	getTicketMessagesSQL = "SELECT v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN žinutės ž ON (ž.fk_uzklausa = u.id) INNER JOIN vartotojai v ON (v.id = ž.fk_vartotojas) WHERE u.id = $1 ORDER BY ž.id ASC"
 )
 
@@ -29,27 +29,51 @@ func (p *PgRepo) NewTx(ctx context.Context) (repository.Transaction, error) {
 	return p.conn.BeginTx(ctx, nil)
 }
 
-func (p *PgRepo) insert(ctx context.Context, q pgsql.Querier, ms *domain.Message) error {
-	return q.QueryRowContext(ctx, insertSQL, ms.TicketID, ms.UserID, ms.Content, ms.Time).Scan(&ms.ID)
+func (p *PgRepo) insert(ctx context.Context, q pgsql.Querier, ms *domain.Message) (*domain.MessageFull, error) {
+	mf := &domain.MessageFull{
+		UserMeta: &domain.UserMeta{},
+		Content:  ms.Content,
+		Time:     ms.Time,
+	}
+
+	err := q.QueryRowContext(
+		ctx,
+		insertSQL,
+
+		ms.TicketID,
+		ms.UserID,
+		ms.Content,
+		ms.Time,
+	).Scan(
+		&ms.ID,
+		&mf.UserMeta.ID,
+		&mf.UserMeta.FirstName,
+		&mf.UserMeta.LastName,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return mf, nil
 }
 
-func (p *PgRepo) Insert(ctx context.Context, ms *domain.Message) error {
+func (p *PgRepo) Insert(ctx context.Context, ms *domain.Message) (*domain.MessageFull, error) {
 	return p.insert(ctx, p.conn, ms)
 }
 
-func (p *PgRepo) InsertTx(ctx context.Context, tx repository.Transaction, ms *domain.Message) error {
+func (p *PgRepo) InsertTx(ctx context.Context, tx repository.Transaction, ms *domain.Message) (*domain.MessageFull, error) {
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
-		return repository.ErrTxMismatch
+		return nil, repository.ErrTxMismatch
 	}
 
-	err := p.insert(ctx, sqlTx, ms)
+	mf, err := p.insert(ctx, sqlTx, ms)
 	if err != nil {
 		sqlTx.Rollback()
-		return err
+		return nil, err
 	}
 
-	return nil
+	return mf, nil
 }
 
 func scanRow(row pgsql.Row) (*domain.MessageFull, error) {
