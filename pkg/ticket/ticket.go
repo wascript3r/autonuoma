@@ -28,23 +28,23 @@ type EndReq struct {
 
 // GetMessages
 
-type TicketStatus struct {
+type TicketInfo struct {
 	ID     int                 `json:"id"`
 	Status domain.TicketStatus `json:"status"`
 }
 
-type GetMessagesReq struct {
+type GetFullReq struct {
 	TicketID int `json:"ticketID" validate:"required"`
 }
 
-type GetMessagesRes struct {
-	Ticket   *TicketStatus          `json:"ticket"`
+type GetFullRes struct {
+	Ticket   *TicketInfo            `json:"ticket"`
 	Messages []*message.MessageInfo `json:"messages"`
 }
 
 // GetTickets
 
-type TicketInfo struct {
+type TicketListInfo struct {
 	ID           int                 `json:"id"`
 	Status       domain.TicketStatus `json:"status"`
 	Client       *user.UserInfo      `json:"client"`
@@ -53,5 +53,5 @@ type TicketInfo struct {
 }
 
 type GetTicketsRes struct {
-	Tickets []*TicketInfo `json:"tickets"`
+	Tickets []*TicketListInfo `json:"tickets"`
 }

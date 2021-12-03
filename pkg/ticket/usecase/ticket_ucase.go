@@ -183,7 +183,7 @@ func (u *Usecase) End(ctx context.Context, userID int, role domain.Role, req *ti
 	return nil
 }
 
-func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role, req *ticket.GetMessagesReq) (*ticket.GetMessagesRes, error) {
+func (u *Usecase) GetFull(ctx context.Context, userID int, role domain.Role, req *ticket.GetFullReq) (*ticket.GetFullRes, error) {
 	if role != domain.ClientRole && role != domain.AgentRole {
 		return nil, domain.ErrInvalidUserRole
 	}
@@ -227,8 +227,8 @@ func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role,
 		}
 	}
 
-	return &ticket.GetMessagesRes{
-		Ticket: &ticket.TicketStatus{
+	return &ticket.GetFullRes{
+		Ticket: &ticket.TicketInfo{
 			ID:     req.TicketID,
 			Status: meta.Status,
 		},
@@ -259,9 +259,9 @@ func (u *Usecase) GetTickets(ctx context.Context, userID int, role domain.Role) 
 		return nil, err
 	}
 
-	tickets := make([]*ticket.TicketInfo, len(ts))
+	tickets := make([]*ticket.TicketListInfo, len(ts))
 	for i, t := range ts {
-		tickets[i] = &ticket.TicketInfo{
+		tickets[i] = &ticket.TicketListInfo{
 			ID:     t.ID,
 			Status: t.Status,
 			Client: &user.UserInfo{

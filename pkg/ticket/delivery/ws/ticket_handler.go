@@ -142,7 +142,7 @@ func (w *WSHandler) OpenTicket(ctx context.Context, s *gows.Socket, r *router.Re
 		return
 	}
 
-	req := &ticket.GetMessagesReq{}
+	req := &ticket.GetFullReq{}
 
 	err = json.Unmarshal(r.Params, req)
 	if err != nil {
@@ -150,7 +150,7 @@ func (w *WSHandler) OpenTicket(ctx context.Context, s *gows.Socket, r *router.Re
 		return
 	}
 
-	res, err := w.ticketUcase.GetMessages(ctx, ss.UserID, ss.RoleID, req)
+	res, err := w.ticketUcase.GetFull(ctx, ss.UserID, ss.RoleID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return
