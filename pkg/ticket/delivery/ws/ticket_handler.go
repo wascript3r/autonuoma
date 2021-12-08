@@ -205,9 +205,9 @@ func (w *WSHandler) TicketNotification(method string) func(context.Context, int)
 		}
 
 		w.socketPool.EmitRoom(pool.RoomName(rName), &router.Response{
-			Err:    nil,
+			Error:  nil,
 			Method: &method,
-			Params: res,
+			Data:   res,
 		})
 	}
 }
@@ -217,9 +217,9 @@ func (w *WSHandler) TicketRoomNotification(method string) func(context.Context, 
 		rName := w.ticketMid.GetRoomName(ticketID)
 
 		w.socketPool.EmitRoom(rName, &router.Response{
-			Err:    nil,
+			Error:  nil,
 			Method: &method,
-			Params: nil,
+			Data:   nil,
 		})
 	}
 }

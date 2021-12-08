@@ -69,9 +69,9 @@ func (w *WSHandler) NewMessageNotification(method string) func(context.Context, 
 		rName := w.ticketMid.GetRoomName(tm.TicketID)
 
 		w.socketPool.EmitRoom(rName, &router.Response{
-			Err:    nil,
+			Error:  nil,
 			Method: &method,
-			Params: tm,
+			Data:   tm,
 		})
 	}
 }
