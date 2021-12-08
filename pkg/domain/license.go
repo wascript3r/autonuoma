@@ -17,3 +17,11 @@ type License struct {
 	Expiration time.Time
 	StatusID   LicenseStatus
 }
+
+type LicenseFull struct {
+	ID         int
+	Number     string
+	ClientMeta *UserMeta
+	Expiration time.Time
+	StatusID   LicenseStatus
+}

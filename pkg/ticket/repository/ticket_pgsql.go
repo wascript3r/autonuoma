@@ -307,13 +307,13 @@ func (p *PgRepo) GetAllTx(ctx context.Context, tx repository.Transaction) ([]*do
 		return nil, repository.ErrTxMismatch
 	}
 
-	ms, err := p.getAll(ctx, sqlTx, nil)
+	ts, err := p.getAll(ctx, sqlTx, nil)
 	if err != nil {
 		sqlTx.Rollback()
 		return nil, err
 	}
 
-	return ms, nil
+	return ts, nil
 }
 
 func (p *PgRepo) GetByUser(ctx context.Context, userID int) ([]*domain.TicketFull, error) {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/license"
+	"github.com/wascript3r/autonuoma/pkg/user"
 )
 
 type Usecase struct {
@@ -67,4 +68,32 @@ func (u *Usecase) Confirm(ctx context.Context, req *license.ChangeStatusReq) err
 
 func (u *Usecase) Reject(ctx context.Context, req *license.ChangeStatusReq) error {
 	return u.changeStatus(ctx, domain.RejectedLicenseStatus, req)
+}
+
+func (u *Usecase) GetAllUnconfirmed(ctx context.Context) (*license.GetAllRes, error) {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	ls, err := u.licenseRepo.GetAllUnconfirmed(c)
+	if err != nil {
+		return nil, err
+	}
+
+	licenses := make([]*license.LicenseListInfo, len(ls))
+	for i, l := range ls {
+		licenses[i] = &license.LicenseListInfo{
+			ID:     l.ID,
+			Number: l.Number,
+			Client: &user.UserInfo{
+				ID:        l.ClientMeta.ID,
+				FirstName: l.ClientMeta.FirstName,
+				LastName:  l.ClientMeta.LastName,
+			},
+			Expiration: l.Expiration,
+		}
+	}
+
+	return &license.GetAllRes{
+		Licenses: licenses,
+	}, nil
 }

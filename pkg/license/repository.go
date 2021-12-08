@@ -15,4 +15,7 @@ type Repository interface {
 
 	SetStatus(ctx context.Context, id int, status domain.LicenseStatus) error
 	SetStatusTx(ctx context.Context, tx repository.Transaction, id int, status domain.LicenseStatus) error
+
+	GetAllUnconfirmed(ctx context.Context) ([]*domain.LicenseFull, error)
+	GetAllUnconfirmedTx(ctx context.Context, tx repository.Transaction) ([]*domain.LicenseFull, error)
 }

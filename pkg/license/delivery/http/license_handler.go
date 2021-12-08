@@ -23,6 +23,7 @@ func NewHTTPHandler(ctx context.Context, r *httprouter.Router, agent *middleware
 
 	r.POST("/api/agent/license/confirm", agent.Wrap(ctx, handler.ConfirmLicense))
 	r.POST("/api/agent/license/reject", agent.Wrap(ctx, handler.RejectLicense))
+	r.GET("/api/agent/licenses", agent.Wrap(ctx, handler.AllLicenses))
 }
 
 func serveError(w http.ResponseWriter, err error) {
@@ -74,4 +75,14 @@ func (h *HTTPHandler) RejectLicense(_ context.Context, w http.ResponseWriter, r 
 	}
 
 	httpjson.ServeJSON(w, nil)
+}
+
+func (h *HTTPHandler) AllLicenses(_ context.Context, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	res, err := h.licenseUcase.GetAllUnconfirmed(r.Context())
+	if err != nil {
+		serveError(w, err)
+		return
+	}
+
+	httpjson.ServeJSON(w, res)
 }
