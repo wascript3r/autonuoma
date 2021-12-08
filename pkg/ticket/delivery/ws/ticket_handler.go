@@ -71,7 +71,7 @@ func (w *WSHandler) NewTicket(ctx context.Context, s *gows.Socket, r *router.Req
 
 	req := &ticket.CreateReq{}
 
-	err = json.Unmarshal(r.Params, req)
+	err = json.Unmarshal(r.Data, req)
 	if err != nil {
 		router.WriteBadRequest(s, &r.Method)
 		return
@@ -95,7 +95,7 @@ func (w *WSHandler) AcceptTicket(ctx context.Context, s *gows.Socket, r *router.
 
 	req := &ticket.AcceptReq{}
 
-	err = json.Unmarshal(r.Params, req)
+	err = json.Unmarshal(r.Data, req)
 	if err != nil {
 		router.WriteBadRequest(s, &r.Method)
 		return
@@ -119,7 +119,7 @@ func (w *WSHandler) EndTicket(ctx context.Context, s *gows.Socket, r *router.Req
 
 	req := &ticket.EndReq{}
 
-	err = json.Unmarshal(r.Params, req)
+	err = json.Unmarshal(r.Data, req)
 	if err != nil {
 		router.WriteBadRequest(s, &r.Method)
 		return
@@ -143,7 +143,7 @@ func (w *WSHandler) OpenTicket(ctx context.Context, s *gows.Socket, r *router.Re
 
 	req := &ticket.GetFullReq{}
 
-	err = json.Unmarshal(r.Params, req)
+	err = json.Unmarshal(r.Data, req)
 	if err != nil {
 		router.WriteBadRequest(s, &r.Method)
 		return
