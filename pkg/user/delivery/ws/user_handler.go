@@ -57,7 +57,7 @@ func serveError(s *gows.Socket, r *router.Request, err error) {
 func (w *WSHandler) Authenticate(ctx context.Context, s *gows.Socket, r *router.Request) {
 	req := &user.TempToken{}
 
-	err := json.Unmarshal(r.Params, req)
+	err := json.Unmarshal(r.Data, req)
 	if err != nil {
 		router.WriteBadRequest(s, &r.Method)
 		return

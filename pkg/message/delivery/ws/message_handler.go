@@ -49,7 +49,7 @@ func (w *WSHandler) NewMessage(ctx context.Context, s *gows.Socket, r *router.Re
 
 	req := &message.SendReq{}
 
-	err = json.Unmarshal(r.Params, req)
+	err = json.Unmarshal(r.Data, req)
 	if err != nil {
 		router.WriteBadRequest(s, &r.Method)
 		return
