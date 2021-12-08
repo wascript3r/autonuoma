@@ -75,9 +75,5 @@ func (w *WSHandler) Authenticate(ctx context.Context, s *gows.Socket, r *router.
 		w.socketPool.JoinRoom(s, AgentRoom.Name())
 	}
 
-	w.socketPool.EmitRoom(AuthenticatedRoom.Name(), &router.Response{
-		Error:  nil,
-		Method: &r.Method,
-		Data:   nil,
-	})
+	router.WriteRes(s, &r.Method, nil)
 }
