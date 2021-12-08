@@ -258,19 +258,6 @@ func main() {
 
 	authWsStack := wsMiddleware.New()
 	authWsStack.Use(sessionWsMid.Authenticated)
-	wsLog := func(next router.Handler) router.Handler {
-		return func(ctx context.Context, s *gows.Socket, r *router.Request) {
-			defer next(ctx, s, r)
-
-			ss, err := sessionUcase.LoadCtx(ctx)
-			if err != nil {
-				log.Println("[WS] cannot get user ID")
-				return
-			}
-			log.Println("[WS] user ID:", ss.UserID)
-		}
-	}
-	authWsStack.Use(wsLog)
 
 	notAuthWsStack := wsMiddleware.New()
 	notAuthWsStack.Use(sessionWsMid.NotAuthenticated)
@@ -283,7 +270,6 @@ func main() {
 
 	adminWsStack := wsMiddleware.New()
 	adminWsStack.Use(sessionWsMid.HasRole(domain.AdminRole))
-	adminWsStack.Use(wsLog)
 
 	// App context
 	ctx, cancel := context.WithCancel(context.Background())
