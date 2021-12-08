@@ -61,6 +61,11 @@ import (
 	_licenseUcase "github.com/wascript3r/autonuoma/pkg/license/usecase"
 	_licenseValidator "github.com/wascript3r/autonuoma/pkg/license/validator"
 
+	// FAQ
+	_faqHandler "github.com/wascript3r/autonuoma/pkg/faq/delivery/http"
+	_faqRepo "github.com/wascript3r/autonuoma/pkg/faq/repository"
+	_faqUcase "github.com/wascript3r/autonuoma/pkg/faq/usecase"
+
 	// Room
 	_roomRepo "github.com/wascript3r/autonuoma/pkg/room/repository"
 	_roomUcase "github.com/wascript3r/autonuoma/pkg/room/usecase"
@@ -228,6 +233,13 @@ func main() {
 		Cfg.Database.Postgres.QueryTimeout.Duration,
 
 		licenseValidator,
+	)
+
+	// FAQ
+	faqRepo := _faqRepo.NewPgRepo(dbConn)
+	faqUcase := _faqUcase.New(
+		faqRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
 	)
 
 	// Room
@@ -414,6 +426,7 @@ func main() {
 
 		licenseUcase,
 	)
+	_faqHandler.NewHTTPHandler(httpRouter, faqUcase)
 
 	httpServer := &http.Server{
 		Addr:    ":" + Cfg.HTTP.Port,
