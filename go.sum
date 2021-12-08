@@ -72,7 +72,6 @@ github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81P
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/wascript3r/cryptopay v0.0.4/go.mod h1:Cba12JGj58KdPpqBofC15THkiO4Hrb6xf4z0IDs3wVk=
 github.com/wascript3r/cryptopay v0.0.6/go.mod h1:9fhE0bpgdqQxmhb2DcEb+ngNQqmm618lrEo0xWMFBH4=
 github.com/wascript3r/cryptopay v0.0.7 h1:OaaOAIZyHobj42fdks4hoBe4tFuIyUj0hEucNd/kj1Y=
 github.com/wascript3r/cryptopay v0.0.7/go.mod h1:6LtYjbjw3Rvo7zvF3fTsa1B7xCqpu9JD1CV/DJjKNco=
@@ -82,12 +81,11 @@ github.com/wascript3r/gocipher v0.0.0-20201105141458-6510a149f009 h1:3XgM3mmCGVv
 github.com/wascript3r/gocipher v0.0.0-20201105141458-6510a149f009/go.mod h1:WwV/zbfmTgVBS8lPTTWjFP1vhRk2gfHNtNyXxPWJ9zg=
 github.com/wascript3r/gopool v0.0.0-20200227213539-8fa9e794e69d h1:0Q4a0Ls9SWDUJ0SV+rmis7MCuTmJSuuVzGkCJBmEkSI=
 github.com/wascript3r/gopool v0.0.0-20200227213539-8fa9e794e69d/go.mod h1:Ja/yZy95QgEFsYk8X5fCFc3YMHuJRTLrP7P83qytdWU=
-github.com/wascript3r/goretry v0.0.0-20200627141250-c1ef4c1b0529/go.mod h1:4dbuRp5QAJqxhX8tVLS7+dLU/gBL7rCvFalCgj7OHPY=
 github.com/wascript3r/goretry v0.0.0-20200701213336-d69f512bec4f/go.mod h1:4dbuRp5QAJqxhX8tVLS7+dLU/gBL7rCvFalCgj7OHPY=
 github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216 h1:nb1gO8jQZKhKmc2Ei8kCnzrBWXG1RzyuC6VVvlsZ9mk=
 github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216/go.mod h1:LwB7eG/QzNAPv5T2jes7jMZZKPfmCwhttCzN1i/B5mE=
-github.com/wascript3r/gows v0.0.0-20211202125347-6893638807a6 h1:kStZz+xtBj/wsDWV0JWX+W4lPp5XvhEV5O3MHsBAjRk=
-github.com/wascript3r/gows v0.0.0-20211202125347-6893638807a6/go.mod h1:DVxXsHZ9TNySLB4INNqL79+DPlPhXqCyMfE8MqD1BZQ=
+github.com/wascript3r/gows v0.0.0-20211208112201-25e1c22fce42 h1:w11nSne/d0G7ijTpMdMXRbkbhXVIRcvKsqmK7LRdmys=
+github.com/wascript3r/gows v0.0.0-20211208112201-25e1c22fce42/go.mod h1:32Mr5iUEkBf6hn4g/riA7ggrX/X/y/HsPi8dsuuqjyM=
 github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99 h1:0bVfBgty7NZDRIjEcWPfYoZJkypVuigqlZtFDcVOSOU=
 github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99/go.mod h1:19HmlCTCeK4g01lTTEyEXK5E0qOsb/FInurlV790ww8=
 golang.org/x/crypto v0.0.0-20170930174604-9419663f5a44/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
@@ -110,8 +108,8 @@ golang.org/x/sys v0.0.0-20201119102817-f84b799fce68/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20201207223542-d4d67f95c62d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 h1:TyHqChC80pFkXWraUUf6RuB5IqFdQieMLwwCJokV2pc=
-golang.org/x/sys v0.0.0-20211124211545-fe61309f8881/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.0.0-20211205182925-97ca703d548d h1:FjkYO/PPp4Wi0EAUOVLxePm7qVW4r4ctbWpURyuOD0E=
+golang.org/x/sys v0.0.0-20211205182925-97ca703d548d/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.2/go.mod h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk=
