@@ -55,6 +55,12 @@ import (
 	_ticketUcase "github.com/wascript3r/autonuoma/pkg/ticket/usecase"
 	_ticketValidator "github.com/wascript3r/autonuoma/pkg/ticket/validator"
 
+	// License
+	_licenseHandler "github.com/wascript3r/autonuoma/pkg/license/delivery/http"
+	_licenseRepo "github.com/wascript3r/autonuoma/pkg/license/repository"
+	_licenseUcase "github.com/wascript3r/autonuoma/pkg/license/usecase"
+	_licenseValidator "github.com/wascript3r/autonuoma/pkg/license/validator"
+
 	// Room
 	_roomRepo "github.com/wascript3r/autonuoma/pkg/room/repository"
 	_roomUcase "github.com/wascript3r/autonuoma/pkg/room/usecase"
@@ -214,6 +220,16 @@ func main() {
 		ticketValidator,
 	)
 
+	// License
+	licenseRepo := _licenseRepo.NewPgRepo(dbConn)
+	licenseValidator := _licenseValidator.New()
+	licenseUcase := _licenseUcase.New(
+		licenseRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+
+		licenseValidator,
+	)
+
 	// Room
 	roomRepo := _roomRepo.NewMemoryRepo()
 	roomUcase := _roomUcase.New(roomRepo)
@@ -367,6 +383,9 @@ func main() {
 	clientStack := middleware.NewCtx()
 	clientStack.Use(sessionMid.HasRole(domain.ClientRole))
 
+	agentStack := middleware.NewCtx()
+	agentStack.Use(sessionMid.HasRole(domain.AgentRole))
+
 	_userHandler.NewHTTPHandler(
 		context.Background(),
 
@@ -386,6 +405,14 @@ func main() {
 
 		reviewUcase,
 		sessionUcase,
+	)
+	_licenseHandler.NewHTTPHandler(
+		context.Background(),
+
+		httpRouter,
+		agentStack,
+
+		licenseUcase,
 	)
 
 	httpServer := &http.Server{
