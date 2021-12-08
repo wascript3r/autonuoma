@@ -78,7 +78,6 @@ import (
 	wsMiddleware "github.com/wascript3r/gows/middleware"
 	_socketPool "github.com/wascript3r/gows/pool"
 	"github.com/wascript3r/gows/router"
-	"github.com/wascript3r/httputil"
 	"github.com/wascript3r/httputil/middleware"
 )
 
@@ -362,18 +361,6 @@ func main() {
 
 	authStack := middleware.NewCtx()
 	authStack.Use(sessionMid.Authenticated)
-	authStack.Use(func(next httputil.HandleCtx) httputil.HandleCtx {
-		return func(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			defer next(ctx, w, r, p)
-
-			s, err := sessionUcase.LoadCtx(ctx)
-			if err != nil {
-				log.Println("cannot get user ID")
-				return
-			}
-			log.Println("user ID:", s.UserID)
-		}
-	})
 
 	notAuthStack := middleware.New()
 	notAuthStack.Use(sessionMid.NotAuthenticated)
