@@ -70,6 +70,9 @@ import (
 	_roomRepo "github.com/wascript3r/autonuoma/pkg/room/repository"
 	_roomUcase "github.com/wascript3r/autonuoma/pkg/room/usecase"
 
+	// CORS
+	_corsMid "github.com/wascript3r/autonuoma/pkg/cors/delivery/http/middleware"
+
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/gocipher/aes"
 	"github.com/wascript3r/gopool"
@@ -403,7 +406,7 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:    ":" + Cfg.HTTP.Port,
-		Handler: httpRouter,
+		Handler: _corsMid.NewHTTPMiddleware().EnableCors(httpRouter),
 	}
 
 	// Graceful shutdown
