@@ -8,7 +8,6 @@ import (
 	"github.com/wascript3r/autonuoma/pkg/room"
 	"github.com/wascript3r/autonuoma/pkg/session"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
-	"github.com/wascript3r/autonuoma/pkg/user"
 	"github.com/wascript3r/cryptopay/pkg/errcode"
 	"github.com/wascript3r/gows"
 	"github.com/wascript3r/gows/middleware"
@@ -59,7 +58,7 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
-	code := errcode.UnwrapErr(err, user.UnknownError)
+	code := errcode.UnwrapErr(err, ticket.UnknownError)
 	router.WriteErr(s, code, &r.Method)
 }
 
@@ -142,7 +141,7 @@ func (w *WSHandler) OpenTicket(ctx context.Context, s *gows.Socket, r *router.Re
 		return
 	}
 
-	req := &ticket.GetMessagesReq{}
+	req := &ticket.GetFullReq{}
 
 	err = json.Unmarshal(r.Params, req)
 	if err != nil {
@@ -150,7 +149,7 @@ func (w *WSHandler) OpenTicket(ctx context.Context, s *gows.Socket, r *router.Re
 		return
 	}
 
-	res, err := w.ticketUcase.GetMessages(ctx, ss.UserID, ss.RoleID, req)
+	res, err := w.ticketUcase.GetFull(ctx, ss.UserID, ss.RoleID, req)
 	if err != nil {
 		serveError(s, r, err)
 		return
@@ -184,7 +183,7 @@ func (w *WSHandler) AllTickets(ctx context.Context, s *gows.Socket, r *router.Re
 		return
 	}
 
-	res, err := w.ticketUcase.GetTickets(ctx, ss.UserID, ss.RoleID)
+	res, err := w.ticketUcase.GetAll(ctx, ss.UserID, ss.RoleID)
 	if err != nil {
 		serveError(s, r, err)
 		return
@@ -200,15 +199,15 @@ func (w *WSHandler) TicketNotification(method string) func(context.Context, int)
 			return
 		}
 
-		res, err := w.ticketUcase.GetTickets(ctx, 0, domain.AgentRole)
+		res, err := w.ticketUcase.GetAll(ctx, 0, domain.AgentRole)
 		if err != nil {
 			return
 		}
 
 		w.socketPool.EmitRoom(pool.RoomName(rName), &router.Response{
-			Err:    nil,
+			Error:  nil,
 			Method: &method,
-			Params: res,
+			Data:   res,
 		})
 	}
 }
@@ -218,9 +217,9 @@ func (w *WSHandler) TicketRoomNotification(method string) func(context.Context, 
 		rName := w.ticketMid.GetRoomName(ticketID)
 
 		w.socketPool.EmitRoom(rName, &router.Response{
-			Err:    nil,
+			Error:  nil,
 			Method: &method,
-			Params: nil,
+			Data:   nil,
 		})
 	}
 }

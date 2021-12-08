@@ -63,7 +63,7 @@ func (u *Usecase) Send(ctx context.Context, userID int, role domain.Role, req *m
 		return err
 	}
 
-	meta, err := u.ticketRepo.GetTicketMetaTx(c, tx, req.TicketID)
+	meta, err := u.ticketRepo.GetMetaTx(c, tx, req.TicketID)
 	if err != nil {
 		if err == domain.ErrNotFound {
 			return ticket.TicketNotFoundError

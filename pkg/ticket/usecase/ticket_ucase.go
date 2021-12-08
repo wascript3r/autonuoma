@@ -7,6 +7,7 @@ import (
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/message"
+	"github.com/wascript3r/autonuoma/pkg/review"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
 	"github.com/wascript3r/autonuoma/pkg/user"
 )
@@ -14,16 +15,18 @@ import (
 type Usecase struct {
 	ticketRepo  ticket.Repository
 	messageRepo message.Repository
+	reviewRepo  review.Repository
 	ctxTimeout  time.Duration
 
 	ticketEventBus ticket.EventBus
 	validate       ticket.Validate
 }
 
-func New(tr ticket.Repository, mr message.Repository, t time.Duration, teb ticket.EventBus, v ticket.Validate) *Usecase {
+func New(tr ticket.Repository, mr message.Repository, rr review.Repository, t time.Duration, teb ticket.EventBus, v ticket.Validate) *Usecase {
 	return &Usecase{
 		ticketRepo:  tr,
 		messageRepo: mr,
+		reviewRepo:  rr,
 		ctxTimeout:  t,
 
 		ticketEventBus: teb,
@@ -44,7 +47,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 		return 0, err
 	}
 
-	_, err = u.ticketRepo.GetLastActiveTicketIDTx(c, tx, clientID)
+	_, err = u.ticketRepo.GetLastActiveIDTx(c, tx, clientID)
 	if err != domain.ErrNotFound {
 		if err != nil {
 			return 0, err
@@ -98,7 +101,7 @@ func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq
 		return err
 	}
 
-	meta, err := u.ticketRepo.GetTicketMetaTx(c, tx, req.TicketID)
+	meta, err := u.ticketRepo.GetMetaTx(c, tx, req.TicketID)
 	if err != nil {
 		if err == domain.ErrNotFound {
 			return ticket.TicketNotFoundError
@@ -145,7 +148,7 @@ func (u *Usecase) End(ctx context.Context, userID int, role domain.Role, req *ti
 		return err
 	}
 
-	meta, err := u.ticketRepo.GetTicketMetaTx(c, tx, req.TicketID)
+	meta, err := u.ticketRepo.GetMetaTx(c, tx, req.TicketID)
 	if err != nil {
 		if err == domain.ErrNotFound {
 			return ticket.TicketNotFoundError
@@ -183,7 +186,7 @@ func (u *Usecase) End(ctx context.Context, userID int, role domain.Role, req *ti
 	return nil
 }
 
-func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role, req *ticket.GetMessagesReq) (*ticket.GetMessagesRes, error) {
+func (u *Usecase) GetFull(ctx context.Context, userID int, role domain.Role, req *ticket.GetFullReq) (*ticket.GetFullRes, error) {
 	if role != domain.ClientRole && role != domain.AgentRole {
 		return nil, domain.ErrInvalidUserRole
 	}
@@ -195,7 +198,7 @@ func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role,
 	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
 	defer cancel()
 
-	meta, err := u.ticketRepo.GetTicketMeta(c, req.TicketID)
+	meta, err := u.ticketRepo.GetMeta(c, req.TicketID)
 	if err != nil {
 		if err == domain.ErrNotFound {
 			return nil, ticket.TicketNotFoundError
@@ -209,7 +212,12 @@ func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role,
 		return nil, domain.ErrInvalidTicketStatus
 	}
 
-	ms, err := u.messageRepo.GetTicketMessages(ctx, req.TicketID)
+	rs, err := u.reviewRepo.GetByTicket(c, req.TicketID)
+	if err != nil && err != domain.ErrNotFound {
+		return nil, err
+	}
+
+	ms, err := u.messageRepo.GetByTicket(c, req.TicketID)
 	if err != nil {
 		return nil, err
 	}
@@ -227,16 +235,25 @@ func (u *Usecase) GetMessages(ctx context.Context, userID int, role domain.Role,
 		}
 	}
 
-	return &ticket.GetMessagesRes{
-		Ticket: &ticket.TicketStatus{
+	res := &ticket.GetFullRes{
+		Ticket: &ticket.TicketInfo{
 			ID:     req.TicketID,
 			Status: meta.Status,
+			Review: nil,
 		},
 		Messages: messages,
-	}, nil
+	}
+	if rs != nil {
+		res.Ticket.Review = &review.ReviewInfo{
+			Stars:   rs.Stars,
+			Comment: rs.Comment,
+		}
+	}
+
+	return res, nil
 }
 
-func (u *Usecase) GetTickets(ctx context.Context, userID int, role domain.Role) (*ticket.GetTicketsRes, error) {
+func (u *Usecase) GetAll(ctx context.Context, userID int, role domain.Role) (*ticket.GetAllRes, error) {
 	if role != domain.ClientRole && role != domain.AgentRole {
 		return nil, domain.ErrInvalidUserRole
 	}
@@ -250,18 +267,18 @@ func (u *Usecase) GetTickets(ctx context.Context, userID int, role domain.Role) 
 	)
 
 	if role == domain.ClientRole {
-		ts, err = u.ticketRepo.GetUserTickets(c, userID)
+		ts, err = u.ticketRepo.GetByUser(c, userID)
 	} else {
-		ts, err = u.ticketRepo.GetTickets(c)
+		ts, err = u.ticketRepo.GetAll(c)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	tickets := make([]*ticket.TicketInfo, len(ts))
+	tickets := make([]*ticket.TicketListInfo, len(ts))
 	for i, t := range ts {
-		tickets[i] = &ticket.TicketInfo{
+		tickets[i] = &ticket.TicketListInfo{
 			ID:     t.ID,
 			Status: t.Status,
 			Client: &user.UserInfo{
@@ -274,7 +291,7 @@ func (u *Usecase) GetTickets(ctx context.Context, userID int, role domain.Role) 
 		}
 	}
 
-	return &ticket.GetTicketsRes{
+	return &ticket.GetAllRes{
 		Tickets: tickets,
 	}, nil
 }

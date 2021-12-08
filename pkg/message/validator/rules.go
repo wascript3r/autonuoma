@@ -12,7 +12,7 @@ func newRules() rules {
 
 func (r rules) attachTo(goV *validator.Validate) {
 	aliases := map[string]string{
-		"m_message": "lt=100",
+		"m_message": "lte=100",
 	}
 
 	for k, v := range aliases {

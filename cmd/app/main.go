@@ -41,6 +41,12 @@ import (
 	_messageUcase "github.com/wascript3r/autonuoma/pkg/message/usecase"
 	_messageValidator "github.com/wascript3r/autonuoma/pkg/message/validator"
 
+	// Review
+	_reviewHandler "github.com/wascript3r/autonuoma/pkg/review/delivery/http"
+	_reviewRepo "github.com/wascript3r/autonuoma/pkg/review/repository"
+	_reviewUcase "github.com/wascript3r/autonuoma/pkg/review/usecase"
+	_reviewValidator "github.com/wascript3r/autonuoma/pkg/review/validator"
+
 	// Ticket
 	_ticketWsHandler "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws"
 	_ticketWsMid "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws/middleware"
@@ -48,6 +54,17 @@ import (
 	_ticketRepo "github.com/wascript3r/autonuoma/pkg/ticket/repository"
 	_ticketUcase "github.com/wascript3r/autonuoma/pkg/ticket/usecase"
 	_ticketValidator "github.com/wascript3r/autonuoma/pkg/ticket/validator"
+
+	// License
+	_licenseHandler "github.com/wascript3r/autonuoma/pkg/license/delivery/http"
+	_licenseRepo "github.com/wascript3r/autonuoma/pkg/license/repository"
+	_licenseUcase "github.com/wascript3r/autonuoma/pkg/license/usecase"
+	_licenseValidator "github.com/wascript3r/autonuoma/pkg/license/validator"
+
+	// FAQ
+	_faqHandler "github.com/wascript3r/autonuoma/pkg/faq/delivery/http"
+	_faqRepo "github.com/wascript3r/autonuoma/pkg/faq/repository"
+	_faqUcase "github.com/wascript3r/autonuoma/pkg/faq/usecase"
 
 	// Room
 	_roomRepo "github.com/wascript3r/autonuoma/pkg/room/repository"
@@ -184,16 +201,45 @@ func main() {
 		messageValidator,
 	)
 
+	// Review
+	reviewRepo := _reviewRepo.NewPgRepo(dbConn)
+	reviewValidator := _reviewValidator.New()
+	reviewUcase := _reviewUcase.New(
+		reviewRepo,
+		ticketRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+
+		reviewValidator,
+	)
+
 	// Ticket
 	ticketEventBus := _ticketEventBus.New(pool, logger)
 	ticketValidator := _ticketValidator.New(messageValidator)
 	ticketUcase := _ticketUcase.New(
 		ticketRepo,
 		messageRepo,
+		reviewRepo,
 		Cfg.Database.Postgres.QueryTimeout.Duration,
 
 		ticketEventBus,
 		ticketValidator,
+	)
+
+	// License
+	licenseRepo := _licenseRepo.NewPgRepo(dbConn)
+	licenseValidator := _licenseValidator.New()
+	licenseUcase := _licenseUcase.New(
+		licenseRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+
+		licenseValidator,
+	)
+
+	// FAQ
+	faqRepo := _faqRepo.NewPgRepo(dbConn)
+	faqUcase := _faqUcase.New(
+		faqRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
 	)
 
 	// Room
@@ -346,6 +392,12 @@ func main() {
 	notAuthStack := middleware.New()
 	notAuthStack.Use(sessionMid.NotAuthenticated)
 
+	clientStack := middleware.NewCtx()
+	clientStack.Use(sessionMid.HasRole(domain.ClientRole))
+
+	agentStack := middleware.NewCtx()
+	agentStack.Use(sessionMid.HasRole(domain.AgentRole))
+
 	_userHandler.NewHTTPHandler(
 		context.Background(),
 
@@ -357,6 +409,24 @@ func main() {
 		sessionUcase,
 		sessionMid,
 	)
+	_reviewHandler.NewHTTPHandler(
+		context.Background(),
+
+		httpRouter,
+		clientStack,
+
+		reviewUcase,
+		sessionUcase,
+	)
+	_licenseHandler.NewHTTPHandler(
+		context.Background(),
+
+		httpRouter,
+		agentStack,
+
+		licenseUcase,
+	)
+	_faqHandler.NewHTTPHandler(httpRouter, faqUcase)
 
 	httpServer := &http.Server{
 		Addr:    ":" + Cfg.HTTP.Port,

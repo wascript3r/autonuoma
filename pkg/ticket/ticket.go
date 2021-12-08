@@ -5,6 +5,7 @@ import (
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/message"
+	"github.com/wascript3r/autonuoma/pkg/review"
 	"github.com/wascript3r/autonuoma/pkg/user"
 )
 
@@ -26,25 +27,26 @@ type EndReq struct {
 	TicketID int `json:"ticketID" validate:"required"`
 }
 
-// GetMessages
+// GetFull
 
-type TicketStatus struct {
+type TicketInfo struct {
 	ID     int                 `json:"id"`
 	Status domain.TicketStatus `json:"status"`
+	Review *review.ReviewInfo  `json:"review"`
 }
 
-type GetMessagesReq struct {
+type GetFullReq struct {
 	TicketID int `json:"ticketID" validate:"required"`
 }
 
-type GetMessagesRes struct {
-	Ticket   *TicketStatus          `json:"ticket"`
+type GetFullRes struct {
+	Ticket   *TicketInfo            `json:"ticket"`
 	Messages []*message.MessageInfo `json:"messages"`
 }
 
-// GetTickets
+// GetAll
 
-type TicketInfo struct {
+type TicketListInfo struct {
 	ID           int                 `json:"id"`
 	Status       domain.TicketStatus `json:"status"`
 	Client       *user.UserInfo      `json:"client"`
@@ -52,6 +54,6 @@ type TicketInfo struct {
 	Time         time.Time           `json:"time"`
 }
 
-type GetTicketsRes struct {
-	Tickets []*TicketInfo `json:"tickets"`
+type GetAllRes struct {
+	Tickets []*TicketListInfo `json:"tickets"`
 }

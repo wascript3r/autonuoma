@@ -17,9 +17,9 @@ var (
 		errors.New("ticket is already ended"),
 	)
 
-	NoActiveTicketsError = errcode.New(
-		"no_active_tickets",
-		errors.New("there are no active tickets"),
+	TicketNotEndedError = errcode.New(
+		"ticket_not_ended",
+		errors.New("ticket is not ended"),
 	)
 
 	TicketAlreadyAcceptedError = errcode.New(

@@ -13,6 +13,6 @@ type Repository interface {
 	Insert(ctx context.Context, ms *domain.Message) (*domain.MessageFull, error)
 	InsertTx(ctx context.Context, tx repository.Transaction, ms *domain.Message) (*domain.MessageFull, error)
 
-	GetTicketMessages(ctx context.Context, ticketID int) ([]*domain.MessageFull, error)
-	GetTicketMessagesTx(ctx context.Context, tx repository.Transaction, ticketID int) ([]*domain.MessageFull, error)
+	GetByTicket(ctx context.Context, ticketID int) ([]*domain.MessageFull, error)
+	GetByTicketTx(ctx context.Context, tx repository.Transaction, ticketID int) ([]*domain.MessageFull, error)
 }
