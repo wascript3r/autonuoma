@@ -24,3 +24,18 @@ type LicenseListInfo struct {
 type GetAllRes struct {
 	Licenses []*LicenseListInfo `json:"licenses"`
 }
+
+// GetPhotos
+
+type GetPhotosReq struct {
+	LicenseID int `json:"licenseID" validate:"required"`
+}
+
+type PhotoListInfo struct {
+	ID  int    `json:"id"`
+	URL string `json:"url"`
+}
+
+type GetPhotosRes struct {
+	Photos []*PhotoListInfo `json:"photos"`
+}

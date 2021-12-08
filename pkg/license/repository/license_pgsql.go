@@ -16,9 +16,8 @@ const (
 
 	setStatusSQL = "UPDATE vairuotojo_pažymėjimai SET būsena = $2 WHERE id = $1"
 	getAllSQL    = "SELECT vp.id, vp.nr, v.id, v.vardas, v.pavardė, vp.galiojimo_pabaiga, vp.būsena FROM vairuotojo_pažymėjimai vp INNER JOIN vartotojai v ON (v.id = vp.fk_vartotojas) WHERE vp.būsena = $1 ORDER BY vp.id ASC"
+	getPhotosSQL = "SELECT id, fk_vairuotojo_pazymejimas, nuoroda FROM vairuotojo_pažymėjimo_nuotraukos WHERE fk_vairuotojo_pazymejimas = $1 ORDER BY id ASC"
 )
-
-type scanFunc func(row pgsql.Row) (*domain.LicenseFull, error)
 
 type PgRepo struct {
 	conn *sql.DB
@@ -95,7 +94,7 @@ func (p *PgRepo) SetStatusTx(ctx context.Context, tx repository.Transaction, id 
 	return nil
 }
 
-func scanRow(row pgsql.Row) (*domain.LicenseFull, error) {
+func scanLicense(row pgsql.Row) (*domain.LicenseFull, error) {
 	l := &domain.LicenseFull{
 		ID:         0,
 		Number:     "",
@@ -122,7 +121,7 @@ func scanRow(row pgsql.Row) (*domain.LicenseFull, error) {
 	return l, nil
 }
 
-func scanRows(rows *sql.Rows, scan scanFunc) ([]*domain.LicenseFull, error) {
+func scanLicenses(rows *sql.Rows, scan func(row pgsql.Row) (*domain.LicenseFull, error)) ([]*domain.LicenseFull, error) {
 	var ls []*domain.LicenseFull
 
 	for rows.Next() {
@@ -147,7 +146,7 @@ func (p *PgRepo) getAll(ctx context.Context, q pgsql.Querier) ([]*domain.License
 		return nil, err
 	}
 
-	return scanRows(rows, scanRow)
+	return scanLicenses(rows, scanLicense)
 }
 
 func (p *PgRepo) GetAllUnconfirmed(ctx context.Context) ([]*domain.LicenseFull, error) {
@@ -167,4 +166,62 @@ func (p *PgRepo) GetAllUnconfirmedTx(ctx context.Context, tx repository.Transact
 	}
 
 	return ls, nil
+}
+
+func scanPhoto(row pgsql.Row) (*domain.LicensePhoto, error) {
+	p := &domain.LicensePhoto{}
+
+	err := row.Scan(&p.ID, &p.LicenseID, &p.URL)
+	if err != nil {
+		return nil, pgsql.ParseSQLError(err)
+	}
+
+	return p, nil
+}
+
+func scanPhotos(rows *sql.Rows, scan func(row pgsql.Row) (*domain.LicensePhoto, error)) ([]*domain.LicensePhoto, error) {
+	var ps []*domain.LicensePhoto
+
+	for rows.Next() {
+		p, err := scan(rows)
+		if err != nil {
+			rows.Close()
+			return nil, err
+		}
+		ps = append(ps, p)
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return ps, nil
+}
+
+func (p *PgRepo) getPhotos(ctx context.Context, q pgsql.Querier, licenseID int) ([]*domain.LicensePhoto, error) {
+	rows, err := q.QueryContext(ctx, getPhotosSQL, licenseID)
+	if err != nil {
+		return nil, err
+	}
+
+	return scanPhotos(rows, scanPhoto)
+}
+
+func (p *PgRepo) GetPhotos(ctx context.Context, licenseID int) ([]*domain.LicensePhoto, error) {
+	return p.getPhotos(ctx, p.conn, licenseID)
+}
+
+func (p *PgRepo) GetPhotosTx(ctx context.Context, tx repository.Transaction, licenseID int) ([]*domain.LicensePhoto, error) {
+	sqlTx, ok := tx.(*sql.Tx)
+	if !ok {
+		return nil, repository.ErrTxMismatch
+	}
+
+	ps, err := p.getPhotos(ctx, sqlTx, licenseID)
+	if err != nil {
+		sqlTx.Rollback()
+		return nil, err
+	}
+
+	return ps, nil
 }

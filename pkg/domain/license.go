@@ -25,3 +25,9 @@ type LicenseFull struct {
 	Expiration time.Time
 	StatusID   LicenseStatus
 }
+
+type LicensePhoto struct {
+	ID        int
+	LicenseID int
+	URL       string
+}

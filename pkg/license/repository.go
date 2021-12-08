@@ -18,4 +18,7 @@ type Repository interface {
 
 	GetAllUnconfirmed(ctx context.Context) ([]*domain.LicenseFull, error)
 	GetAllUnconfirmedTx(ctx context.Context, tx repository.Transaction) ([]*domain.LicenseFull, error)
+
+	GetPhotos(ctx context.Context, licenseID int) ([]*domain.LicensePhoto, error)
+	GetPhotosTx(ctx context.Context, tx repository.Transaction, licenseID int) ([]*domain.LicensePhoto, error)
 }

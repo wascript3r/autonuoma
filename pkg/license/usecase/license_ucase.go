@@ -97,3 +97,37 @@ func (u *Usecase) GetAllUnconfirmed(ctx context.Context) (*license.GetAllRes, er
 		Licenses: licenses,
 	}, nil
 }
+
+func (u *Usecase) GetPhotos(ctx context.Context, req *license.GetPhotosReq) (*license.GetPhotosRes, error) {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	status, err := u.licenseRepo.GetStatus(c, req.LicenseID)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return nil, license.LicenseNotFoundError
+		}
+		return nil, err
+	}
+
+	if status != domain.SubmittedLicenseStatus {
+		return nil, license.LicenseAlreadyProcessedError
+	}
+
+	ps, err := u.licenseRepo.GetPhotos(c, req.LicenseID)
+	if err != nil {
+		return nil, err
+	}
+
+	photos := make([]*license.PhotoListInfo, len(ps))
+	for i, p := range ps {
+		photos[i] = &license.PhotoListInfo{
+			ID:  p.ID,
+			URL: p.URL,
+		}
+	}
+
+	return &license.GetPhotosRes{
+		Photos: photos,
+	}, nil
+}

@@ -24,6 +24,7 @@ func NewHTTPHandler(ctx context.Context, r *httprouter.Router, agent *middleware
 	r.POST("/api/agent/license/confirm", agent.Wrap(ctx, handler.ConfirmLicense))
 	r.POST("/api/agent/license/reject", agent.Wrap(ctx, handler.RejectLicense))
 	r.GET("/api/agent/licenses", agent.Wrap(ctx, handler.AllLicenses))
+	r.POST("/api/agent/license/photos", agent.Wrap(ctx, handler.AllPhotos))
 }
 
 func serveError(w http.ResponseWriter, err error) {
@@ -79,6 +80,24 @@ func (h *HTTPHandler) RejectLicense(_ context.Context, w http.ResponseWriter, r 
 
 func (h *HTTPHandler) AllLicenses(_ context.Context, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	res, err := h.licenseUcase.GetAllUnconfirmed(r.Context())
+	if err != nil {
+		serveError(w, err)
+		return
+	}
+
+	httpjson.ServeJSON(w, res)
+}
+
+func (h *HTTPHandler) AllPhotos(_ context.Context, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	req := &license.GetPhotosReq{}
+
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		httpjson.BadRequest(w, nil)
+		return
+	}
+
+	res, err := h.licenseUcase.GetPhotos(r.Context(), req)
 	if err != nil {
 		serveError(w, err)
 		return
