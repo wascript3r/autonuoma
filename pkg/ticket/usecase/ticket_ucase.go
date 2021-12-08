@@ -7,6 +7,7 @@ import (
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/message"
+	"github.com/wascript3r/autonuoma/pkg/review"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
 	"github.com/wascript3r/autonuoma/pkg/user"
 )
@@ -14,16 +15,18 @@ import (
 type Usecase struct {
 	ticketRepo  ticket.Repository
 	messageRepo message.Repository
+	reviewRepo  review.Repository
 	ctxTimeout  time.Duration
 
 	ticketEventBus ticket.EventBus
 	validate       ticket.Validate
 }
 
-func New(tr ticket.Repository, mr message.Repository, t time.Duration, teb ticket.EventBus, v ticket.Validate) *Usecase {
+func New(tr ticket.Repository, mr message.Repository, rr review.Repository, t time.Duration, teb ticket.EventBus, v ticket.Validate) *Usecase {
 	return &Usecase{
 		ticketRepo:  tr,
 		messageRepo: mr,
+		reviewRepo:  rr,
 		ctxTimeout:  t,
 
 		ticketEventBus: teb,
@@ -209,7 +212,12 @@ func (u *Usecase) GetFull(ctx context.Context, userID int, role domain.Role, req
 		return nil, domain.ErrInvalidTicketStatus
 	}
 
-	ms, err := u.messageRepo.GetTicketMessages(ctx, req.TicketID)
+	rs, err := u.reviewRepo.GetByTicketID(c, req.TicketID)
+	if err != nil && err != domain.ErrNotFound {
+		return nil, err
+	}
+
+	ms, err := u.messageRepo.GetTicketMessages(c, req.TicketID)
 	if err != nil {
 		return nil, err
 	}
@@ -227,13 +235,22 @@ func (u *Usecase) GetFull(ctx context.Context, userID int, role domain.Role, req
 		}
 	}
 
-	return &ticket.GetFullRes{
+	res := &ticket.GetFullRes{
 		Ticket: &ticket.TicketInfo{
 			ID:     req.TicketID,
 			Status: meta.Status,
+			Review: nil,
 		},
 		Messages: messages,
-	}, nil
+	}
+	if rs != nil {
+		res.Ticket.Review = &review.ReviewInfo{
+			Stars:   rs.Stars,
+			Comment: rs.Comment,
+		}
+	}
+
+	return res, nil
 }
 
 func (u *Usecase) GetTickets(ctx context.Context, userID int, role domain.Role) (*ticket.GetTicketsRes, error) {

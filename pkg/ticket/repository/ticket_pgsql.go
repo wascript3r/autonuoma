@@ -215,13 +215,13 @@ func (p *PgRepo) GetTicketMetaTx(ctx context.Context, tx repository.Transaction,
 		return nil, repository.ErrTxMismatch
 	}
 
-	status, err := p.getTicketMeta(ctx, sqlTx, id, true)
+	meta, err := p.getTicketMeta(ctx, sqlTx, id, true)
 	if err != nil {
 		sqlTx.Rollback()
 		return nil, err
 	}
 
-	return status, nil
+	return meta, nil
 }
 
 func scanRow(row pgsql.Row) (*domain.TicketFull, error) {

@@ -41,6 +41,12 @@ import (
 	_messageUcase "github.com/wascript3r/autonuoma/pkg/message/usecase"
 	_messageValidator "github.com/wascript3r/autonuoma/pkg/message/validator"
 
+	// Review
+	_reviewHandler "github.com/wascript3r/autonuoma/pkg/review/delivery/http"
+	_reviewRepo "github.com/wascript3r/autonuoma/pkg/review/repository"
+	_reviewUcase "github.com/wascript3r/autonuoma/pkg/review/usecase"
+	_reviewValidator "github.com/wascript3r/autonuoma/pkg/review/validator"
+
 	// Ticket
 	_ticketWsHandler "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws"
 	_ticketWsMid "github.com/wascript3r/autonuoma/pkg/ticket/delivery/ws/middleware"
@@ -184,12 +190,24 @@ func main() {
 		messageValidator,
 	)
 
+	// Review
+	reviewRepo := _reviewRepo.NewPgRepo(dbConn)
+	reviewValidator := _reviewValidator.New()
+	reviewUcase := _reviewUcase.New(
+		reviewRepo,
+		ticketRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+
+		reviewValidator,
+	)
+
 	// Ticket
 	ticketEventBus := _ticketEventBus.New(pool, logger)
 	ticketValidator := _ticketValidator.New(messageValidator)
 	ticketUcase := _ticketUcase.New(
 		ticketRepo,
 		messageRepo,
+		reviewRepo,
 		Cfg.Database.Postgres.QueryTimeout.Duration,
 
 		ticketEventBus,
@@ -346,6 +364,9 @@ func main() {
 	notAuthStack := middleware.New()
 	notAuthStack.Use(sessionMid.NotAuthenticated)
 
+	clientStack := middleware.NewCtx()
+	clientStack.Use(sessionMid.HasRole(domain.ClientRole))
+
 	_userHandler.NewHTTPHandler(
 		context.Background(),
 
@@ -356,6 +377,15 @@ func main() {
 		userUcase,
 		sessionUcase,
 		sessionMid,
+	)
+	_reviewHandler.NewHTTPHandler(
+		context.Background(),
+
+		httpRouter,
+		clientStack,
+
+		reviewUcase,
+		sessionUcase,
 	)
 
 	httpServer := &http.Server{

@@ -8,7 +8,6 @@ import (
 	"github.com/wascript3r/autonuoma/pkg/room"
 	"github.com/wascript3r/autonuoma/pkg/session"
 	"github.com/wascript3r/autonuoma/pkg/ticket"
-	"github.com/wascript3r/autonuoma/pkg/user"
 	"github.com/wascript3r/cryptopay/pkg/errcode"
 	"github.com/wascript3r/gows"
 	"github.com/wascript3r/gows/middleware"
@@ -59,7 +58,7 @@ func NewWSHandler(r *router.Router, client *middleware.Stack, agent *middleware.
 }
 
 func serveError(s *gows.Socket, r *router.Request, err error) {
-	code := errcode.UnwrapErr(err, user.UnknownError)
+	code := errcode.UnwrapErr(err, ticket.UnknownError)
 	router.WriteErr(s, code, &r.Method)
 }
 

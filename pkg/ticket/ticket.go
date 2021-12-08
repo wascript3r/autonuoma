@@ -5,6 +5,7 @@ import (
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/message"
+	"github.com/wascript3r/autonuoma/pkg/review"
 	"github.com/wascript3r/autonuoma/pkg/user"
 )
 
@@ -31,6 +32,7 @@ type EndReq struct {
 type TicketInfo struct {
 	ID     int                 `json:"id"`
 	Status domain.TicketStatus `json:"status"`
+	Review *review.ReviewInfo  `json:"review"`
 }
 
 type GetFullReq struct {
