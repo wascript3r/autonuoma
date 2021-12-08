@@ -183,7 +183,7 @@ func (w *WSHandler) AllTickets(ctx context.Context, s *gows.Socket, r *router.Re
 		return
 	}
 
-	res, err := w.ticketUcase.GetTickets(ctx, ss.UserID, ss.RoleID)
+	res, err := w.ticketUcase.GetAll(ctx, ss.UserID, ss.RoleID)
 	if err != nil {
 		serveError(s, r, err)
 		return
@@ -199,7 +199,7 @@ func (w *WSHandler) TicketNotification(method string) func(context.Context, int)
 			return
 		}
 
-		res, err := w.ticketUcase.GetTickets(ctx, 0, domain.AgentRole)
+		res, err := w.ticketUcase.GetAll(ctx, 0, domain.AgentRole)
 		if err != nil {
 			return
 		}

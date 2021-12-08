@@ -27,7 +27,7 @@ type EndReq struct {
 	TicketID int `json:"ticketID" validate:"required"`
 }
 
-// GetMessages
+// GetFull
 
 type TicketInfo struct {
 	ID     int                 `json:"id"`
@@ -44,7 +44,7 @@ type GetFullRes struct {
 	Messages []*message.MessageInfo `json:"messages"`
 }
 
-// GetTickets
+// GetAll
 
 type TicketListInfo struct {
 	ID           int                 `json:"id"`
@@ -54,6 +54,6 @@ type TicketListInfo struct {
 	Time         time.Time           `json:"time"`
 }
 
-type GetTicketsRes struct {
+type GetAllRes struct {
 	Tickets []*TicketListInfo `json:"tickets"`
 }

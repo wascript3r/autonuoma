@@ -11,5 +11,5 @@ type Usecase interface {
 	Accept(ctx context.Context, agentID int, req *AcceptReq) error
 	End(ctx context.Context, userID int, role domain.Role, req *EndReq) error
 	GetFull(ctx context.Context, userID int, role domain.Role, req *GetFullReq) (*GetFullRes, error)
-	GetTickets(ctx context.Context, userID int, role domain.Role) (*GetTicketsRes, error)
+	GetAll(ctx context.Context, userID int, role domain.Role) (*GetAllRes, error)
 }

@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	insertSQL                 = "INSERT INTO įvertinimai (fk_uzklausa, žvaigždutės, komentaras, data) VALUES ($1, $2, $3, $4) RETURNING id"
-	getByTicketIDSQL          = "SELECT id, fk_uzklausa, žvaigždutės, komentaras, data FROM įvertinimai WHERE fk_uzklausa = $1 ORDER BY id ASC LIMIT 1"
-	getByTicketIDForUpdateSQL = "SELECT į.id, į.fk_uzklausa, į.žvaigždutės, į.komentaras, į.data FROM užklausos u INNER JOIN įvertinimai į ON (į.fk_uzklausa = u.id) WHERE u.id = $1 ORDER BY į.id ASC LIMIT 1 FOR UPDATE"
+	insertSQL               = "INSERT INTO įvertinimai (fk_uzklausa, žvaigždutės, komentaras, data) VALUES ($1, $2, $3, $4) RETURNING id"
+	getByTicketSQL          = "SELECT id, fk_uzklausa, žvaigždutės, komentaras, data FROM įvertinimai WHERE fk_uzklausa = $1 ORDER BY id ASC LIMIT 1"
+	getByTicketForUpdateSQL = "SELECT į.id, į.fk_uzklausa, į.žvaigždutės, į.komentaras, į.data FROM užklausos u INNER JOIN įvertinimai į ON (į.fk_uzklausa = u.id) WHERE u.id = $1 ORDER BY į.id ASC LIMIT 1 FOR UPDATE"
 )
 
 type PgRepo struct {
@@ -50,14 +50,14 @@ func (p *PgRepo) InsertTx(ctx context.Context, tx repository.Transaction, rs *do
 	return nil
 }
 
-func (p *PgRepo) getByTicketID(ctx context.Context, q pgsql.Querier, ticketID int, forUpdate bool) (*domain.Review, error) {
+func (p *PgRepo) getByTicket(ctx context.Context, q pgsql.Querier, ticketID int, forUpdate bool) (*domain.Review, error) {
 	var query string
 	r := &domain.Review{}
 
 	if forUpdate {
-		query = getByTicketIDForUpdateSQL
+		query = getByTicketForUpdateSQL
 	} else {
-		query = getByTicketIDSQL
+		query = getByTicketSQL
 	}
 
 	err := q.QueryRowContext(ctx, query, ticketID).Scan(&r.ID, &r.TicketID, &r.Stars, &r.Comment, &r.Time)
@@ -68,17 +68,17 @@ func (p *PgRepo) getByTicketID(ctx context.Context, q pgsql.Querier, ticketID in
 	return r, nil
 }
 
-func (p *PgRepo) GetByTicketID(ctx context.Context, ticketID int) (*domain.Review, error) {
-	return p.getByTicketID(ctx, p.conn, ticketID, false)
+func (p *PgRepo) GetByTicket(ctx context.Context, ticketID int) (*domain.Review, error) {
+	return p.getByTicket(ctx, p.conn, ticketID, false)
 }
 
-func (p *PgRepo) GetByTicketIDTx(ctx context.Context, tx repository.Transaction, ticketID int) (*domain.Review, error) {
+func (p *PgRepo) GetByTicketTx(ctx context.Context, tx repository.Transaction, ticketID int) (*domain.Review, error) {
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
 		return nil, repository.ErrTxMismatch
 	}
 
-	r, err := p.getByTicketID(ctx, sqlTx, ticketID, true)
+	r, err := p.getByTicket(ctx, sqlTx, ticketID, true)
 	if err != nil {
 		if err != domain.ErrNotFound {
 			sqlTx.Rollback()

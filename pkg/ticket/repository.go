@@ -23,15 +23,15 @@ type Repository interface {
 	SetAgentEnded(ctx context.Context, id int, agentID int, ended time.Time) error
 	SetAgentEndedTx(ctx context.Context, tx repository.Transaction, id int, agentID int, ended time.Time) error
 
-	GetLastActiveTicketID(ctx context.Context, clientID int) (int, error)
-	GetLastActiveTicketIDTx(ctx context.Context, tx repository.Transaction, clientID int) (int, error)
+	GetLastActiveID(ctx context.Context, clientID int) (int, error)
+	GetLastActiveIDTx(ctx context.Context, tx repository.Transaction, clientID int) (int, error)
 
-	GetTicketMeta(ctx context.Context, id int) (*domain.TicketMeta, error)
-	GetTicketMetaTx(ctx context.Context, tx repository.Transaction, id int) (*domain.TicketMeta, error)
+	GetMeta(ctx context.Context, id int) (*domain.TicketMeta, error)
+	GetMetaTx(ctx context.Context, tx repository.Transaction, id int) (*domain.TicketMeta, error)
 
-	GetTickets(ctx context.Context) ([]*domain.TicketFull, error)
-	GetTicketsTx(ctx context.Context, tx repository.Transaction) ([]*domain.TicketFull, error)
+	GetAll(ctx context.Context) ([]*domain.TicketFull, error)
+	GetAllTx(ctx context.Context, tx repository.Transaction) ([]*domain.TicketFull, error)
 
-	GetUserTickets(ctx context.Context, userID int) ([]*domain.TicketFull, error)
-	GetUserTicketsTx(ctx context.Context, tx repository.Transaction, userID int) ([]*domain.TicketFull, error)
+	GetByUser(ctx context.Context, userID int) ([]*domain.TicketFull, error)
+	GetByUserTx(ctx context.Context, tx repository.Transaction, userID int) ([]*domain.TicketFull, error)
 }

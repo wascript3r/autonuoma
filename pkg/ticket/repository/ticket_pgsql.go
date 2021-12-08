@@ -16,14 +16,14 @@ const (
 	setEndedSQL      = "UPDATE užklausos SET užbaigta = $2 WHERE id = $1"
 	setAgentEndedSQL = "UPDATE užklausos SET fk_klientų_aptarnavimo_specialistas = $2, užbaigta = $3 WHERE id = $1"
 
-	getLastActiveTicketIDSQL          = "SELECT id FROM užklausos WHERE fk_klientas = $1 AND užbaigta IS NULL ORDER BY id DESC LIMIT 1"
-	getLastActiveTicketIDForUpdateSQL = getLastActiveTicketIDSQL + " FOR UPDATE"
+	getLastActiveIDSQL          = "SELECT id FROM užklausos WHERE fk_klientas = $1 AND užbaigta IS NULL ORDER BY id DESC LIMIT 1"
+	getLastActiveIDForUpdateSQL = getLastActiveIDSQL + " FOR UPDATE"
 
-	getTicketMetaSQL          = "SELECT fk_klientas, fk_klientų_aptarnavimo_specialistas, užbaigta FROM užklausos WHERE id = $1"
-	getTicketMetaForUpdateSQL = getTicketMetaSQL + " FOR UPDATE"
+	getMetaSQL          = "SELECT fk_klientas, fk_klientų_aptarnavimo_specialistas, užbaigta FROM užklausos WHERE id = $1"
+	getMetaForUpdateSQL = getMetaSQL + " FOR UPDATE"
 
-	getTicketsSQL     = "SELECT u.id, u.fk_klientų_aptarnavimo_specialistas, u.užbaigta, v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN vartotojai v ON (v.id = u.fk_klientas) INNER JOIN (SELECT fk_uzklausa, tekstas, išsiųsta FROM žinutės WHERE id IN (SELECT MIN(id) FROM žinutės GROUP BY fk_uzklausa)) ž ON (ž.fk_uzklausa = u.id) ORDER BY u.id ASC"
-	getUserTicketsSQL = "SELECT u.id, u.fk_klientų_aptarnavimo_specialistas, u.užbaigta, v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN vartotojai v ON (v.id = u.fk_klientas) INNER JOIN (SELECT fk_uzklausa, tekstas, išsiųsta FROM žinutės WHERE id IN (SELECT MIN(id) FROM žinutės GROUP BY fk_uzklausa)) ž ON (ž.fk_uzklausa = u.id) WHERE u.fk_klientas = $1 ORDER BY u.id ASC"
+	getAllSQL    = "SELECT u.id, u.fk_klientų_aptarnavimo_specialistas, u.užbaigta, v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN vartotojai v ON (v.id = u.fk_klientas) INNER JOIN (SELECT fk_uzklausa, tekstas, išsiųsta FROM žinutės WHERE id IN (SELECT MIN(id) FROM žinutės GROUP BY fk_uzklausa)) ž ON (ž.fk_uzklausa = u.id) ORDER BY u.id ASC"
+	getByUserSQL = "SELECT u.id, u.fk_klientų_aptarnavimo_specialistas, u.užbaigta, v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN vartotojai v ON (v.id = u.fk_klientas) INNER JOIN (SELECT fk_uzklausa, tekstas, išsiųsta FROM žinutės WHERE id IN (SELECT MIN(id) FROM žinutės GROUP BY fk_uzklausa)) ž ON (ž.fk_uzklausa = u.id) WHERE u.fk_klientas = $1 ORDER BY u.id ASC"
 )
 
 type scanFunc func(row pgsql.Row) (*domain.TicketFull, error)
@@ -135,16 +135,16 @@ func (p *PgRepo) SetAgentEndedTx(ctx context.Context, tx repository.Transaction,
 	return nil
 }
 
-func (p *PgRepo) getLastActiveTicketID(ctx context.Context, q pgsql.Querier, clientID int, forUpdate bool) (int, error) {
+func (p *PgRepo) getLastActiveID(ctx context.Context, q pgsql.Querier, clientID int, forUpdate bool) (int, error) {
 	var (
 		ticketID int
 		query    string
 	)
 
 	if forUpdate {
-		query = getLastActiveTicketIDForUpdateSQL
+		query = getLastActiveIDForUpdateSQL
 	} else {
-		query = getLastActiveTicketIDSQL
+		query = getLastActiveIDSQL
 	}
 
 	err := q.QueryRowContext(ctx, query, clientID).Scan(&ticketID)
@@ -155,17 +155,17 @@ func (p *PgRepo) getLastActiveTicketID(ctx context.Context, q pgsql.Querier, cli
 	return ticketID, nil
 }
 
-func (p *PgRepo) GetLastActiveTicketID(ctx context.Context, clientID int) (int, error) {
-	return p.getLastActiveTicketID(ctx, p.conn, clientID, false)
+func (p *PgRepo) GetLastActiveID(ctx context.Context, clientID int) (int, error) {
+	return p.getLastActiveID(ctx, p.conn, clientID, false)
 }
 
-func (p *PgRepo) GetLastActiveTicketIDTx(ctx context.Context, tx repository.Transaction, clientID int) (int, error) {
+func (p *PgRepo) GetLastActiveIDTx(ctx context.Context, tx repository.Transaction, clientID int) (int, error) {
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
 		return 0, repository.ErrTxMismatch
 	}
 
-	ticketID, err := p.getLastActiveTicketID(ctx, sqlTx, clientID, true)
+	ticketID, err := p.getLastActiveID(ctx, sqlTx, clientID, true)
 	if err != nil {
 		if err != domain.ErrNotFound {
 			sqlTx.Rollback()
@@ -186,14 +186,14 @@ func getStatus(agentID *int, ended *time.Time) domain.TicketStatus {
 	return domain.EndedTicketStatus
 }
 
-func (p *PgRepo) getTicketMeta(ctx context.Context, q pgsql.Querier, id int, forUpdate bool) (*domain.TicketMeta, error) {
+func (p *PgRepo) getMeta(ctx context.Context, q pgsql.Querier, id int, forUpdate bool) (*domain.TicketMeta, error) {
 	var query string
 	m := &domain.TicketMeta{}
 
 	if forUpdate {
-		query = getTicketMetaForUpdateSQL
+		query = getMetaForUpdateSQL
 	} else {
-		query = getTicketMetaSQL
+		query = getMetaSQL
 	}
 
 	err := q.QueryRowContext(ctx, query, id).Scan(&m.ClientID, &m.AgentID, &m.Ended)
@@ -205,17 +205,17 @@ func (p *PgRepo) getTicketMeta(ctx context.Context, q pgsql.Querier, id int, for
 	return m, nil
 }
 
-func (p *PgRepo) GetTicketMeta(ctx context.Context, id int) (*domain.TicketMeta, error) {
-	return p.getTicketMeta(ctx, p.conn, id, false)
+func (p *PgRepo) GetMeta(ctx context.Context, id int) (*domain.TicketMeta, error) {
+	return p.getMeta(ctx, p.conn, id, false)
 }
 
-func (p *PgRepo) GetTicketMetaTx(ctx context.Context, tx repository.Transaction, id int) (*domain.TicketMeta, error) {
+func (p *PgRepo) GetMetaTx(ctx context.Context, tx repository.Transaction, id int) (*domain.TicketMeta, error) {
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
 		return nil, repository.ErrTxMismatch
 	}
 
-	meta, err := p.getTicketMeta(ctx, sqlTx, id, true)
+	meta, err := p.getMeta(ctx, sqlTx, id, true)
 	if err != nil {
 		sqlTx.Rollback()
 		return nil, err
@@ -277,15 +277,15 @@ func scanRows(rows *sql.Rows, scan scanFunc) ([]*domain.TicketFull, error) {
 	return ts, nil
 }
 
-func (p *PgRepo) getTickets(ctx context.Context, q pgsql.Querier, userID *int) ([]*domain.TicketFull, error) {
+func (p *PgRepo) getAll(ctx context.Context, q pgsql.Querier, userID *int) ([]*domain.TicketFull, error) {
 	var (
 		query string
 		args  []interface{}
 	)
 	if userID == nil {
-		query = getTicketsSQL
+		query = getAllSQL
 	} else {
-		query = getUserTicketsSQL
+		query = getByUserSQL
 		args = append(args, *userID)
 	}
 
@@ -297,17 +297,17 @@ func (p *PgRepo) getTickets(ctx context.Context, q pgsql.Querier, userID *int) (
 	return scanRows(rows, scanRow)
 }
 
-func (p *PgRepo) GetTickets(ctx context.Context) ([]*domain.TicketFull, error) {
-	return p.getTickets(ctx, p.conn, nil)
+func (p *PgRepo) GetAll(ctx context.Context) ([]*domain.TicketFull, error) {
+	return p.getAll(ctx, p.conn, nil)
 }
 
-func (p *PgRepo) GetTicketsTx(ctx context.Context, tx repository.Transaction) ([]*domain.TicketFull, error) {
+func (p *PgRepo) GetAllTx(ctx context.Context, tx repository.Transaction) ([]*domain.TicketFull, error) {
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
 		return nil, repository.ErrTxMismatch
 	}
 
-	ms, err := p.getTickets(ctx, sqlTx, nil)
+	ms, err := p.getAll(ctx, sqlTx, nil)
 	if err != nil {
 		sqlTx.Rollback()
 		return nil, err
@@ -316,17 +316,17 @@ func (p *PgRepo) GetTicketsTx(ctx context.Context, tx repository.Transaction) ([
 	return ms, nil
 }
 
-func (p *PgRepo) GetUserTickets(ctx context.Context, userID int) ([]*domain.TicketFull, error) {
-	return p.getTickets(ctx, p.conn, &userID)
+func (p *PgRepo) GetByUser(ctx context.Context, userID int) ([]*domain.TicketFull, error) {
+	return p.getAll(ctx, p.conn, &userID)
 }
 
-func (p *PgRepo) GetUserTicketsTx(ctx context.Context, tx repository.Transaction, userID int) ([]*domain.TicketFull, error) {
+func (p *PgRepo) GetByUserTx(ctx context.Context, tx repository.Transaction, userID int) ([]*domain.TicketFull, error) {
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
 		return nil, repository.ErrTxMismatch
 	}
 
-	ms, err := p.getTickets(ctx, sqlTx, &userID)
+	ms, err := p.getAll(ctx, sqlTx, &userID)
 	if err != nil {
 		sqlTx.Rollback()
 		return nil, err

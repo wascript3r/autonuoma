@@ -13,6 +13,6 @@ type Repository interface {
 	Insert(ctx context.Context, rs *domain.Review) error
 	InsertTx(ctx context.Context, tx repository.Transaction, rs *domain.Review) error
 
-	GetByTicketID(ctx context.Context, ticketID int) (*domain.Review, error)
-	GetByTicketIDTx(ctx context.Context, tx repository.Transaction, ticketID int) (*domain.Review, error)
+	GetByTicket(ctx context.Context, ticketID int) (*domain.Review, error)
+	GetByTicketTx(ctx context.Context, tx repository.Transaction, ticketID int) (*domain.Review, error)
 }

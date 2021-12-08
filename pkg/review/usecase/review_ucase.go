@@ -44,7 +44,7 @@ func (u *Usecase) Submit(ctx context.Context, userID int, role domain.Role, req 
 		return err
 	}
 
-	meta, err := u.ticketRepo.GetTicketMetaTx(c, tx, req.TicketID)
+	meta, err := u.ticketRepo.GetMetaTx(c, tx, req.TicketID)
 	if err != nil {
 		if err == domain.ErrNotFound {
 			return ticket.TicketNotFoundError
@@ -60,7 +60,7 @@ func (u *Usecase) Submit(ctx context.Context, userID int, role domain.Role, req 
 		return ticket.TicketNotEndedError
 	}
 
-	_, err = u.reviewRepo.GetByTicketIDTx(ctx, tx, req.TicketID)
+	_, err = u.reviewRepo.GetByTicketTx(ctx, tx, req.TicketID)
 	if err != domain.ErrNotFound {
 		if err != nil {
 			return err

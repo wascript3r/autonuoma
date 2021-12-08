@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	insertSQL            = "WITH inserted AS (INSERT INTO žinutės (fk_uzklausa, fk_vartotojas, tekstas, išsiųsta) VALUES ($1, $2, $3, $4) RETURNING id, fk_vartotojas) SELECT i.id, v.id, v.vardas, v.pavardė FROM inserted i INNER JOIN vartotojai v ON (v.id = i.fk_vartotojas)"
-	getTicketMessagesSQL = "SELECT v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN žinutės ž ON (ž.fk_uzklausa = u.id) INNER JOIN vartotojai v ON (v.id = ž.fk_vartotojas) WHERE u.id = $1 ORDER BY ž.id ASC"
+	insertSQL      = "WITH inserted AS (INSERT INTO žinutės (fk_uzklausa, fk_vartotojas, tekstas, išsiųsta) VALUES ($1, $2, $3, $4) RETURNING id, fk_vartotojas) SELECT i.id, v.id, v.vardas, v.pavardė FROM inserted i INNER JOIN vartotojai v ON (v.id = i.fk_vartotojas)"
+	getByTicketSQL = "SELECT v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN žinutės ž ON (ž.fk_uzklausa = u.id) INNER JOIN vartotojai v ON (v.id = ž.fk_vartotojas) WHERE u.id = $1 ORDER BY ž.id ASC"
 )
 
 type scanFunc func(row pgsql.Row) (*domain.MessageFull, error)
@@ -117,8 +117,8 @@ func scanRows(rows *sql.Rows, scan scanFunc) ([]*domain.MessageFull, error) {
 	return ms, nil
 }
 
-func (p *PgRepo) getTicketMessages(ctx context.Context, q pgsql.Querier, ticketID int) ([]*domain.MessageFull, error) {
-	rows, err := q.QueryContext(ctx, getTicketMessagesSQL, ticketID)
+func (p *PgRepo) getByTicket(ctx context.Context, q pgsql.Querier, ticketID int) ([]*domain.MessageFull, error) {
+	rows, err := q.QueryContext(ctx, getByTicketSQL, ticketID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,17 +126,17 @@ func (p *PgRepo) getTicketMessages(ctx context.Context, q pgsql.Querier, ticketI
 	return scanRows(rows, scanRow)
 }
 
-func (p *PgRepo) GetTicketMessages(ctx context.Context, ticketID int) ([]*domain.MessageFull, error) {
-	return p.getTicketMessages(ctx, p.conn, ticketID)
+func (p *PgRepo) GetByTicket(ctx context.Context, ticketID int) ([]*domain.MessageFull, error) {
+	return p.getByTicket(ctx, p.conn, ticketID)
 }
 
-func (p *PgRepo) GetTicketMessagesTx(ctx context.Context, tx repository.Transaction, ticketID int) ([]*domain.MessageFull, error) {
+func (p *PgRepo) GetByTicketTx(ctx context.Context, tx repository.Transaction, ticketID int) ([]*domain.MessageFull, error) {
 	sqlTx, ok := tx.(*sql.Tx)
 	if !ok {
 		return nil, repository.ErrTxMismatch
 	}
 
-	ms, err := p.getTicketMessages(ctx, sqlTx, ticketID)
+	ms, err := p.getByTicket(ctx, sqlTx, ticketID)
 	if err != nil {
 		sqlTx.Rollback()
 		return nil, err
