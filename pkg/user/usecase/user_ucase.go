@@ -118,3 +118,10 @@ func (u *Usecase) AuthenticateToken(ctx context.Context, req *user.TempToken) (*
 func (u *Usecase) Logout(ctx context.Context, ss *domain.Session) error {
 	return u.sessionUcase.Delete(ctx, ss.ID)
 }
+
+func (u *Usecase) GetInfo(userID int, role domain.Role) *user.AuthenticateRes {
+	return &user.AuthenticateRes{
+		UserID: userID,
+		RoleID: role,
+	}
+}

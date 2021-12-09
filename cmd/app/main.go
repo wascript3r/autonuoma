@@ -405,8 +405,10 @@ func main() {
 	_faqHandler.NewHTTPHandler(httpRouter, faqUcase)
 
 	httpServer := &http.Server{
-		Addr:    ":" + Cfg.HTTP.Port,
-		Handler: _corsMid.NewHTTPMiddleware().EnableCors(httpRouter),
+		Addr: ":" + Cfg.HTTP.Port,
+		Handler: _corsMid.NewHTTPMiddleware(
+			Cfg.HTTP.CORS.Origin,
+		).EnableCors(httpRouter),
 	}
 
 	// Graceful shutdown
