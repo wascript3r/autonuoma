@@ -42,8 +42,11 @@ type Config struct {
 	} `json:"auth"`
 
 	HTTP struct {
-		Port        string `json:"port"`
-		EnablePprof bool   `json:"enablePprof"`
+		Port string `json:"port"`
+		CORS struct {
+			Origin string `json:"origin"`
+		} `json:"cors"`
+		EnablePprof bool `json:"enablePprof"`
 	} `json:"http"`
 
 	WebSocket struct {

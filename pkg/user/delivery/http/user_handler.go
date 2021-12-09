@@ -31,6 +31,7 @@ func NewHTTPHandler(ctx context.Context, r *httprouter.Router, auth *middleware.
 	r.POST("/api/user/authenticate", notAuth.Wrap(handler.AuthenticateUser))
 	r.GET("/api/user/token", auth.Wrap(ctx, handler.GetToken))
 	r.GET("/api/user/logout", auth.Wrap(ctx, handler.LogoutUser))
+	r.GET("/api/user/info", auth.Wrap(ctx, handler.UserInfo))
 }
 
 func serveError(w http.ResponseWriter, err error) {
@@ -116,4 +117,15 @@ func (h *HTTPHandler) LogoutUser(ctx context.Context, w http.ResponseWriter, r *
 	h.sessionMid.DeleteSessionCookie(w)
 
 	httpjson.ServeJSON(w, nil)
+}
+
+func (h *HTTPHandler) UserInfo(ctx context.Context, w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+	s, err := h.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		httpjson.InternalError(w, nil)
+		return
+	}
+
+	res := h.userUcase.GetInfo(s.UserID, s.RoleID)
+	httpjson.ServeJSON(w, res)
 }
