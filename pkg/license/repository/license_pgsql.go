@@ -15,7 +15,7 @@ const (
 	getStatusForUpdateSQL = getStatusSQL + " FOR UPDATE"
 
 	setStatusSQL = "UPDATE vairuotojo_pažymėjimai SET būsena = $2 WHERE id = $1"
-	getAllSQL    = "SELECT vp.id, vp.nr, v.id, v.vardas, v.pavardė, vp.galiojimo_pabaiga, vp.būsena FROM vairuotojo_pažymėjimai vp INNER JOIN vartotojai v ON (v.id = vp.fk_vartotojas) WHERE vp.būsena = $1 ORDER BY vp.id ASC"
+	getAllSQL    = "SELECT vp.id, vp.nr, v.id, v.vardas, v.pavardė, v.asmens_kodas, vp.galiojimo_pabaiga, vp.būsena FROM vairuotojo_pažymėjimai vp INNER JOIN vartotojai v ON (v.id = vp.fk_vartotojas) WHERE vp.būsena = $1 ORDER BY vp.id ASC"
 	getPhotosSQL = "SELECT id, fk_vairuotojo_pazymejimas, nuoroda FROM vairuotojo_pažymėjimo_nuotraukos WHERE fk_vairuotojo_pazymejimas = $1 ORDER BY id ASC"
 )
 
@@ -96,9 +96,12 @@ func (p *PgRepo) SetStatusTx(ctx context.Context, tx repository.Transaction, id 
 
 func scanLicense(row pgsql.Row) (*domain.LicenseFull, error) {
 	l := &domain.LicenseFull{
-		ID:         0,
-		Number:     "",
-		ClientMeta: &domain.UserMeta{},
+		ID:     0,
+		Number: "",
+		ClientMeta: &domain.UserSensitiveMeta{
+			UserMeta: &domain.UserMeta{},
+			PIN:      "",
+		},
 		Expiration: time.Time{},
 		StatusID:   0,
 	}
@@ -110,6 +113,7 @@ func scanLicense(row pgsql.Row) (*domain.LicenseFull, error) {
 		&l.ClientMeta.ID,
 		&l.ClientMeta.FirstName,
 		&l.ClientMeta.LastName,
+		&l.ClientMeta.PIN,
 
 		&l.Expiration,
 		&l.StatusID,

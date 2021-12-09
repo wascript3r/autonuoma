@@ -38,3 +38,8 @@ type UserMeta struct {
 	FirstName string
 	LastName  string
 }
+
+type UserSensitiveMeta struct {
+	*UserMeta
+	PIN string
+}

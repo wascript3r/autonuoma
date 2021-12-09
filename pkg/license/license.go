@@ -15,10 +15,10 @@ type ChangeStatusReq struct {
 // GetAll
 
 type LicenseListInfo struct {
-	ID         int            `json:"id"`
-	Number     string         `json:"number"`
-	Client     *user.UserInfo `json:"client"`
-	Expiration time.Time      `json:"expiration"`
+	ID         int                     `json:"id"`
+	Number     string                  `json:"number"`
+	Client     *user.UserSensitiveInfo `json:"client"`
+	Expiration time.Time               `json:"expiration"`
 }
 
 type GetAllRes struct {

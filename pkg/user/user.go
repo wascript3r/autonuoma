@@ -14,6 +14,11 @@ type UserInfo struct {
 	LastName  string `json:"lastName"`
 }
 
+type UserSensitiveInfo struct {
+	*UserInfo
+	PIN string `json:"pin"`
+}
+
 // Create
 
 type BirthDate time.Time
