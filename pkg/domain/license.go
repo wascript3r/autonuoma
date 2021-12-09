@@ -21,7 +21,7 @@ type License struct {
 type LicenseFull struct {
 	ID         int
 	Number     string
-	ClientMeta *UserMeta
+	ClientMeta *UserSensitiveMeta
 	Expiration time.Time
 	StatusID   LicenseStatus
 }

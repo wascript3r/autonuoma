@@ -84,10 +84,13 @@ func (u *Usecase) GetAllUnconfirmed(ctx context.Context) (*license.GetAllRes, er
 		licenses[i] = &license.LicenseListInfo{
 			ID:     l.ID,
 			Number: l.Number,
-			Client: &user.UserInfo{
-				ID:        l.ClientMeta.ID,
-				FirstName: l.ClientMeta.FirstName,
-				LastName:  l.ClientMeta.LastName,
+			Client: &user.UserSensitiveInfo{
+				UserInfo: &user.UserInfo{
+					ID:        l.ClientMeta.ID,
+					FirstName: l.ClientMeta.FirstName,
+					LastName:  l.ClientMeta.LastName,
+				},
+				PIN: l.ClientMeta.PIN,
 			},
 			Expiration: l.Expiration,
 		}
