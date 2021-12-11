@@ -237,9 +237,10 @@ func (u *Usecase) GetFull(ctx context.Context, userID int, role domain.Role, req
 
 	res := &ticket.GetFullRes{
 		Ticket: &ticket.TicketInfo{
-			ID:     req.TicketID,
-			Status: meta.Status,
-			Review: nil,
+			ID:      req.TicketID,
+			Status:  meta.Status,
+			AgentID: meta.AgentID,
+			Review:  nil,
 		},
 		Messages: messages,
 	}

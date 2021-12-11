@@ -30,9 +30,10 @@ type EndReq struct {
 // GetFull
 
 type TicketInfo struct {
-	ID     int                 `json:"id"`
-	Status domain.TicketStatus `json:"status"`
-	Review *review.ReviewInfo  `json:"review"`
+	ID      int                 `json:"id"`
+	Status  domain.TicketStatus `json:"status"`
+	AgentID *int                `json:"agentID"`
+	Review  *review.ReviewInfo  `json:"review"`
 }
 
 type GetFullReq struct {
