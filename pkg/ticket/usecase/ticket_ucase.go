@@ -34,9 +34,9 @@ func New(tr ticket.Repository, mr message.Repository, rr review.Repository, t ti
 	}
 }
 
-func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateReq) (int, error) {
+func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateReq) (*ticket.CreateRes, error) {
 	if err := u.validate.RawRequest(req); err != nil {
-		return 0, ticket.InvalidInputError
+		return nil, ticket.InvalidInputError
 	}
 
 	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
@@ -44,15 +44,15 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 
 	tx, err := u.ticketRepo.NewTx(c)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	_, err = u.ticketRepo.GetLastActiveIDTx(c, tx, clientID)
 	if err != domain.ErrNotFound {
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
-		return 0, ticket.TicketStillActiveError
+		return nil, ticket.TicketStillActiveError
 	}
 
 	t := &domain.Ticket{
@@ -64,7 +64,7 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 
 	err = u.ticketRepo.InsertTx(c, tx, t)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	m := &domain.Message{
@@ -76,16 +76,18 @@ func (u *Usecase) Create(ctx context.Context, clientID int, req *ticket.CreateRe
 
 	_, err = u.messageRepo.InsertTx(c, tx, m)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if err = tx.Commit(); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	u.ticketEventBus.Publish(ticket.NewTicketEvent, ctx, t.ID)
 
-	return t.ID, nil
+	return &ticket.CreateRes{
+		TicketID: t.ID,
+	}, nil
 }
 
 func (u *Usecase) Accept(ctx context.Context, agentID int, req *ticket.AcceptReq) error {
