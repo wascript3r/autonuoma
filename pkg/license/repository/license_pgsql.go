@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
@@ -13,10 +14,14 @@ import (
 const (
 	getStatusSQL          = "SELECT būsena FROM vairuotojo_pažymėjimai WHERE id = $1"
 	getStatusForUpdateSQL = getStatusSQL + " FOR UPDATE"
+	getStatusNameSQL      = "SELECT name FROm vairuotojo_pažymėjimo_būsenos WHERE id = $1"
 
 	setStatusSQL = "UPDATE vairuotojo_pažymėjimai SET būsena = $2 WHERE id = $1"
 	getAllSQL    = "SELECT vp.id, vp.nr, v.id, v.vardas, v.pavardė, v.asmens_kodas, vp.galiojimo_pabaiga, vp.būsena FROM vairuotojo_pažymėjimai vp INNER JOIN vartotojai v ON (v.id = vp.fk_vartotojas) WHERE vp.būsena = $1 ORDER BY vp.id ASC"
 	getPhotosSQL = "SELECT id, fk_vairuotojo_pazymejimas, nuoroda FROM vairuotojo_pažymėjimo_nuotraukos WHERE fk_vairuotojo_pazymejimas = $1 ORDER BY id ASC"
+
+	uploadLicenseSQL      = "INSERT INTO vairuotojo_pažymėjimai (nr, galiojimo_pabaiga, būsena, fk_vartotojas) VALUES ($1, $2, $3, $4) RETURNING id"
+	uploadLicenseImageSQL = "INSERT INTO vairuotojo_pažymėjimo_nuotraukos (nuoroda, fk_vairuotojo_pazymejimas) VALUES ($1, $2)"
 )
 
 type PgRepo struct {
@@ -228,4 +233,26 @@ func (p *PgRepo) GetPhotosTx(ctx context.Context, tx repository.Transaction, lic
 	}
 
 	return ps, nil
+}
+
+func (p *PgRepo) uploadLicense(ctx context.Context, uid int, expirationDate time.Time, number string, filename string) (string, error) {
+	var id string
+	if err := p.conn.QueryRowContext(ctx, uploadLicenseSQL, number, expirationDate, domain.SubmittedLicenseStatus, uid).Scan(&id); err != nil {
+		return "", pgsql.ParseSQLError(err)
+	}
+
+	if err := p.conn.QueryRowContext(ctx, uploadLicenseImageSQL, filename, id).Err(); err != nil {
+		return "", pgsql.ParseSQLError(err)
+	}
+
+	var status string
+	if err := p.conn.QueryRowContext(ctx, getStatusNameSQL, domain.SubmittedLicenseStatus).Scan(&status); err != nil {
+		return "", pgsql.ParseSQLError(err)
+	}
+
+	return strings.TrimSpace(status), nil
+}
+
+func (p *PgRepo) UploadLicense(ctx context.Context, uid int, expirationDate time.Time, number string, filename string) (string, error) {
+	return p.uploadLicense(ctx, uid, expirationDate, number, filename)
 }

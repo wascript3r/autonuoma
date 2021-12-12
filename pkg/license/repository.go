@@ -2,6 +2,7 @@ package license
 
 import (
 	"context"
+	"time"
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/repository"
@@ -21,4 +22,6 @@ type Repository interface {
 
 	GetPhotos(ctx context.Context, licenseID int) ([]*domain.LicensePhoto, error)
 	GetPhotosTx(ctx context.Context, tx repository.Transaction, licenseID int) ([]*domain.LicensePhoto, error)
+
+	UploadLicense(ctx context.Context, uid int, expirationDate time.Time, number string, filename string) (string, error)
 }
