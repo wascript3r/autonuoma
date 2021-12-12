@@ -49,7 +49,7 @@ func (h *HTTPHandler) SubmitReview(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 
-	req := &review.CreateReq{}
+	req := &review.SubmitReq{}
 
 	err = json.NewDecoder(r.Body).Decode(req)
 	if err != nil {

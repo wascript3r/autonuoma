@@ -27,7 +27,7 @@ func New(rr review.Repository, tr ticket.Repository, t time.Duration, v ticket.V
 	}
 }
 
-func (u *Usecase) Submit(ctx context.Context, userID int, role domain.Role, req *review.CreateReq) error {
+func (u *Usecase) Submit(ctx context.Context, userID int, role domain.Role, req *review.SubmitReq) error {
 	if role != domain.ClientRole {
 		return domain.ErrInvalidUserRole
 	}
