@@ -2,6 +2,10 @@ package usecase
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"path/filepath"
 	"time"
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
@@ -14,14 +18,20 @@ type Usecase struct {
 	ctxTimeout  time.Duration
 
 	validate license.Validate
+
+	licensePrefix string
+	licenseDir    string
 }
 
-func New(lr license.Repository, t time.Duration, v license.Validate) *Usecase {
+func New(lr license.Repository, t time.Duration, v license.Validate, prefix, dir string) *Usecase {
 	return &Usecase{
 		licenseRepo: lr,
 		ctxTimeout:  t,
 
 		validate: v,
+
+		licensePrefix: prefix,
+		licenseDir:    dir,
 	}
 }
 
@@ -132,5 +142,28 @@ func (u *Usecase) GetPhotos(ctx context.Context, req *license.GetPhotosReq) (*li
 
 	return &license.GetPhotosRes{
 		Photos: photos,
+	}, nil
+}
+
+func (u *Usecase) Upload(ctx context.Context, req *license.UploadReq) (*license.UploadRes, error) {
+	tempFile, err := ioutil.TempFile(u.licenseDir, fmt.Sprintf("%s-*", u.licensePrefix))
+	if err != nil {
+		return nil, err
+	}
+	defer tempFile.Close()
+
+	_, err = io.Copy(tempFile, req.File)
+	if err != nil {
+		return nil, err
+	}
+
+	status, err := u.licenseRepo.UploadLicense(ctx, req.Uid, req.LicenseExpirationDate, req.LicenseNumber, filepath.Base(tempFile.Name()))
+	if err != nil {
+		return nil, err
+	}
+
+	return &license.UploadRes{
+		Filename:      tempFile.Name(),
+		LicenseStatus: status,
 	}, nil
 }

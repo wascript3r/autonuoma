@@ -235,6 +235,9 @@ func main() {
 		Cfg.Database.Postgres.QueryTimeout.Duration,
 
 		licenseValidator,
+
+		"license",
+		"./public/licenses",
 	)
 
 	// FAQ
@@ -399,8 +402,10 @@ func main() {
 
 		httpRouter,
 		agentStack,
+		clientStack,
 
 		licenseUcase,
+		sessionUcase,
 	)
 	_faqHandler.NewHTTPHandler(httpRouter, faqUcase)
 
