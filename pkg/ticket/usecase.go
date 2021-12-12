@@ -7,7 +7,7 @@ import (
 )
 
 type Usecase interface {
-	Create(ctx context.Context, clientID int, req *CreateReq) (int, error)
+	Create(ctx context.Context, clientID int, req *CreateReq) (*CreateRes, error)
 	Accept(ctx context.Context, agentID int, req *AcceptReq) error
 	End(ctx context.Context, userID int, role domain.Role, req *EndReq) error
 	GetFull(ctx context.Context, userID int, role domain.Role, req *GetFullReq) (*GetFullRes, error)

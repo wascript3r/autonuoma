@@ -15,6 +15,10 @@ type CreateReq struct {
 	Message string `json:"message" validate:"required,m_message"`
 }
 
+type CreateRes struct {
+	TicketID int `json:"ticketID"`
+}
+
 // Accept
 
 type AcceptReq struct {
