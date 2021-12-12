@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <button id="all_faq">All FAQ</button>
+    <br>
+    <b>Common:</b>
+    <button id="login">Login</button>
+    <button id="logout">Logout</button>
+    <button id="auth">Auth</button>
+    <br>
+    <b>Client:</b>
+    <button id="client_all_tickets">All tickets</button>
+    <button id="create_ticket">Create ticket</button>
+    <button id="client_new_message">New message</button>
+    <button id="client_end_ticket">End ticket</button>
+    <button id="client_open_ticket">Open ticket</button>
+    <button id="client_close_ticket">Close ticket</button>
+    <button id="client_submit_review">Submit review</button>
+    <br>
+    <b>Agent:</b>
+    <button id="agent_all_tickets">All tickets</button>
+    <button id="accept_ticket">Accept ticket</button>
+    <button id="agent_new_message">New message</button>
+    <button id="agent_end_ticket">End ticket</button>
+    <button id="agent_open_ticket">Open ticket</button>
+    <button id="agent_close_ticket">Close ticket</button>
+    <br>
+    <button id="agent_all_licenses">All licenses</button>
+    <button id="agent_confirm_license">Confirm license</button>
+    <button id="agent_reject_license">Reject license</button>
+    <button id="agent_license_photos">Get license photos</button>
+
+    <br><br>
+    <div id="games"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let socket = new WebSocket("ws://127.0.0.1:3333");
+        let apiURL = 'http://127.0.0.1/api'
+        {{/* let socket = new WebSocket("ws://" + window.location.hostname + ":3333"); */}}
+
+        function apiPost(m, p) {
+            return $.post(apiURL + m, JSON.stringify(p))
+                .then(res => {
+                    if (res.error !== null) {
+                        return Promise.reject(res.error.message)
+                    }
+                    return Promise.resolve(res.data)
+                })
+                .catch(err => {
+                    if (typeof err !== 'string') {
+                        if (typeof (err.responseJSON) === 'undefined' || typeof (err.responseJSON.error) === 'undefined') {
+                            return
+                        }
+                        err = err.responseJSON.error.message
+                    }
+                    alert(err)
+                    return Promise.reject(err)
+                })
+        }
+
+        function apiGet(m) {
+            return $.get(apiURL + m)
+                .then(res => {
+                    if (res.error !== null) {
+                        return Promise.reject(res.error.message)
+                    }
+                    return Promise.resolve(res.data)
+                })
+                .catch(err => {
+                    if (typeof err !== 'string') {
+                        if (typeof (err.responseJSON) === 'undefined' || typeof (err.responseJSON.error) === 'undefined') {
+                            return
+                        }
+                        err = err.responseJSON.error.message
+                    }
+                    alert(err)
+                    return Promise.reject(err)
+                })
+        }
+
+        function socketSend(method, data) {
+            socket.send(JSON.stringify({method, data}))
+        }
+
+        document.getElementById("login").onclick = (e) => {
+            let email = prompt('Email:')
+            let password = prompt('Password:')
+            apiPost('/user/authenticate', {email, password})
+                .then(data => {
+                    alert(JSON.stringify(data))
+                })
+        }
+
+        document.getElementById("logout").onclick = (e) => {
+            apiGet('/user/logout', null)
+                .then(() => {
+                    alert('Logged out')
+                })
+        }
+
+        document.getElementById("auth").onclick = (e) => {
+            apiGet('/user/token', null)
+                .then(data => {
+                    socketSend("user/authenticate", {token: data.token})
+                })
+        }
+
+        document.getElementById("create_ticket").onclick = (e) => {
+            let message = prompt('Ticket message:')
+            socketSend("client/ticket/new", {message})
+        }
+
+        document.getElementById("accept_ticket").onclick = (e) => {
+            let ticketID = parseInt(prompt('Ticket ID:'))
+            socketSend("agent/ticket/accept", {ticketID})
+        }
+
+        document.getElementById("client_new_message").onclick = (e) => {
+            let ticketID = parseInt(prompt('Ticket ID:'))
+            let message = prompt('Message:')
+            socketSend("client/ticket/message/new", {ticketID, message})
+        }
+
+        document.getElementById("agent_new_message").onclick = (e) => {
+            let ticketID = parseInt(prompt('Ticket ID:'))
+            let message = prompt('Message:')
+            socketSend("agent/ticket/message/new", {ticketID, message})
+        }
+
+        document.getElementById("client_end_ticket").onclick = (e) => {
+            let ticketID = parseInt(prompt('Ticket ID:'))
+            socketSend("client/ticket/end", {ticketID})
+        }
+
+        document.getElementById("agent_end_ticket").onclick = (e) => {
+            let ticketID = parseInt(prompt('Ticket ID:'))
+            socketSend("agent/ticket/end", {ticketID})
+        }
+
+        document.getElementById("client_open_ticket").onclick = (e) => {
+            let ticketID = parseInt(prompt('Ticket ID:'))
+            socketSend("client/ticket/open", {ticketID})
+        }
+
+        document.getElementById("agent_open_ticket").onclick = (e) => {
+            let ticketID = parseInt(prompt('Ticket ID:'))
+            socketSend("agent/ticket/open", {ticketID})
+        }
+
+        document.getElementById("client_close_ticket").onclick = (e) => {
+            socketSend("client/ticket/close", null)
+        }
+
+        document.getElementById("agent_close_ticket").onclick = (e) => {
+            socketSend("agent/ticket/close", null)
+        }
+
+        document.getElementById("client_all_tickets").onclick = (e) => {
+            socketSend("client/tickets", null)
+        }
+
+        document.getElementById("agent_all_tickets").onclick = (e) => {
+            socketSend("agent/tickets", null)
+        }
+
+        document.getElementById("client_submit_review").onclick = (e) => {
+            let ticketID = parseInt(prompt('Ticket ID:'))
+            let stars = parseInt(prompt('Stars:'))
+            let comment = prompt('Comment:')
+            if (comment === '') {
+                comment = null;
+            }
+            apiPost('/client/ticket/review/submit', {ticketID, stars, comment})
+                .then(data => {
+                    alert(JSON.stringify(data))
+                })
+        }
+
+        document.getElementById("agent_all_licenses").onclick = (e) => {
+            apiGet('/agent/licenses')
+                .then(data => {
+                    insertMessage(JSON.stringify(data))
+                })
+        }
+
+        document.getElementById("agent_confirm_license").onclick = (e) => {
+            let licenseID = parseInt(prompt('License ID:'))
+            apiPost('/agent/license/confirm', {licenseID})
+                .then(data => {
+                    alert(JSON.stringify(data))
+                })
+        }
+
+        document.getElementById("agent_reject_license").onclick = (e) => {
+            let licenseID = parseInt(prompt('License ID:'))
+            apiPost('/agent/license/reject', {licenseID})
+                .then(data => {
+                    alert(JSON.stringify(data))
+                })
+        }
+
+        document.getElementById("agent_license_photos").onclick = (e) => {
+            let licenseID = parseInt(prompt('License ID:'))
+            apiPost('/agent/license/photos', {licenseID})
+                .then(data => {
+                    insertMessage(JSON.stringify(data))
+                })
+        }
+
+        document.getElementById("all_faq").onclick = (e) => {
+            apiGet('/faq')
+                .then(data => {
+                    insertMessage(JSON.stringify(data))
+                })
+        }
+
+        socket.onopen = function(e) {
+            insertMessage("[open] Connection established");
+            // alert("Sending to server");
+            // socket.send("ping");
+        };
+
+        setInterval(() => {
+            socketSend("ping")
+        }, 10000)
+
+        function insertMessage(msg) {
+            document.getElementById("games").innerHTML += msg + "<br>"
+        }
+
+        socket.onmessage = function(event) {
+        // alert(`[message] Data received from server: ${event.data}`);
+            insertMessage(event.data)
+        };
+
+        socket.onclose = function(event) {
+        if (event.wasClean) {
+            insertMessage(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+            console.log('reason', event.reason)
+        } else {
+            // e.g. server process killed or network down
+            // event.code is usually 1006 in this case
+            insertMessage(`[close] Connection died, code=${event.code}`);
+        }
+        };
+
+        socket.onerror = function(error) {
+            console.log(error)
+            insertMessage(`[error] ${error.message}`);
+        };
+    </script>
+</body>
+</html>
