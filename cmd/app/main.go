@@ -411,6 +411,11 @@ func main() {
 		).EnableCors(httpRouter),
 	}
 
+	// websocket.html file
+	httpRouter.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		http.ServeFile(w, r, "public/websocket.html")
+	})
+
 	// Graceful shutdown
 	gracefulShutdown := func() {
 		cancel()
