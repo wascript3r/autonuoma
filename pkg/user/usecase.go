@@ -13,5 +13,5 @@ type Usecase interface {
 	AuthenticateToken(ctx context.Context, req *TempToken) (*domain.Session, error)
 	Logout(ctx context.Context, ss *domain.Session) error
 	GetInfo(userID int, role domain.Role) *AuthenticateRes
-	GetData(ctx context.Context, uid int) (*UserInfo, error)
+	GetData(ctx context.Context, uid int) (*UserProfile, error)
 }

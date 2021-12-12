@@ -179,8 +179,8 @@ func (p *PgRepo) GetLicenseStatus(ctx context.Context, uid int) (string, error) 
 	return "nepateiktas", nil
 }
 
-func (p *PgRepo) GetData(ctx context.Context, uid int) (*user.UserInfo, error) {
-	u := &user.UserInfo{}
+func (p *PgRepo) GetData(ctx context.Context, uid int) (*user.UserProfile, error) {
+	u := &user.UserProfile{}
 	u.ID = uid
 
 	err := p.conn.QueryRowContext(ctx, getDataSQL, uid).Scan(&u.FirstName, &u.LastName, &u.Email, &u.Birthdate, &u.Balance)

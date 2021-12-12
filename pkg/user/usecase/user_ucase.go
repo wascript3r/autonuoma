@@ -126,7 +126,7 @@ func (u *Usecase) GetInfo(userID int, role domain.Role) *user.AuthenticateRes {
 	}
 }
 
-func (u *Usecase) GetData(ctx context.Context, uid int) (*user.UserInfo, error) {
+func (u *Usecase) GetData(ctx context.Context, uid int) (*user.UserProfile, error) {
 	user, err := u.userRepo.GetData(ctx, uid)
 	if err != nil {
 		return nil, err
