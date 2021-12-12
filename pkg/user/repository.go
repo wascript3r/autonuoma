@@ -19,4 +19,7 @@ type Repository interface {
 
 	AddBalance(ctx context.Context, id int, value int64) error
 	AddBalanceTx(ctx context.Context, tx repository.Transaction, id int, value int64) error
+
+	GetData(ctx context.Context, uid int) (*UserInfo, error)
+	GetLicenseStatus(ctx context.Context, uid int) (string, error)
 }

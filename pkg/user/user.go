@@ -9,9 +9,13 @@ import (
 )
 
 type UserInfo struct {
-	ID        int    `json:"id"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
+	ID            int       `json:"id"`
+	Balance       float32   `json:"balance"`
+	FirstName     string    `json:"firstName"`
+	LastName      string    `json:"lastName"`
+	Email         string    `json:"email"`
+	Birthdate     BirthDate `json:"birthdate"`
+	LicenseStatus string    `json:"license,omitempty"`
 }
 
 type UserSensitiveInfo struct {

@@ -3,10 +3,13 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"strings"
+	"time"
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/repository"
 	"github.com/wascript3r/autonuoma/pkg/repository/pgsql"
+	"github.com/wascript3r/autonuoma/pkg/user"
 )
 
 const (
@@ -15,6 +18,8 @@ const (
 	getCredentialsSQL    = "SELECT id, rolė, slaptažodis FROM vartotojai WHERE el_paštas = $1"
 	deductBalanceSQL     = "UPDATE vartotojai SET balansas = balansas - $2 WHERE id = $1"
 	addBalanceSQL        = "UPDATE vartotojai SET balansas = balansas + $2 WHERE id = $1"
+	getDataSQL           = "SELECT vardas, pavardė, el_paštas, gimimo_data, balansas FROM vartotojai WHERE id = $1"
+	getLicenseStatusSQL  = "SELECT b.name, p.galiojimo_pabaiga FROM vairuotojo_pažymėjimai p, vairuotojo_pažymėjimo_būsenos b WHERE p.fk_vartotojas = $1 AND b.id = p.būsena AND p.būsena = $2"
 )
 
 type PgRepo struct {
@@ -137,4 +142,51 @@ func (p *PgRepo) AddBalanceTx(ctx context.Context, tx repository.Transaction, id
 	}
 
 	return nil
+}
+
+func (p *PgRepo) GetLicenseStatus(ctx context.Context, uid int) (string, error) {
+	var licenseStatus string
+	var licenseEndDate time.Time
+
+	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid, domain.ConfirmedLicenseStatus).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
+		return "", err
+	}
+
+	if len(licenseStatus) > 0 {
+		if licenseEndDate.Before(time.Now()) {
+			return "pasibaigęs galiojimas", nil
+		}
+
+		return strings.TrimSpace(licenseStatus), nil
+	}
+
+	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid, domain.RejectedLicenseStatus).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
+		return "", err
+	}
+
+	if len(licenseStatus) > 0 {
+		return strings.TrimSpace(licenseStatus), nil
+	}
+
+	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid, domain.SubmittedLicenseStatus).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
+		return "", err
+	}
+
+	if len(licenseStatus) > 0 {
+		return strings.TrimSpace(licenseStatus), nil
+	}
+
+	return "nepateiktas", nil
+}
+
+func (p *PgRepo) GetData(ctx context.Context, uid int) (*user.UserInfo, error) {
+	u := &user.UserInfo{}
+	u.ID = uid
+
+	err := p.conn.QueryRowContext(ctx, getDataSQL, uid).Scan(&u.FirstName, &u.LastName, &u.Email, &u.Birthdate, &u.Balance)
+	if err != nil {
+		return nil, pgsql.ParseSQLError(err)
+	}
+
+	return u, nil
 }

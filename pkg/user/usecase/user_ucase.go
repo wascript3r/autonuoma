@@ -125,3 +125,19 @@ func (u *Usecase) GetInfo(userID int, role domain.Role) *user.AuthenticateRes {
 		RoleID: role,
 	}
 }
+
+func (u *Usecase) GetData(ctx context.Context, uid int) (*user.UserInfo, error) {
+	user, err := u.userRepo.GetData(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	licenseStatus, err := u.userRepo.GetLicenseStatus(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	user.LicenseStatus = licenseStatus
+
+	return user, nil
+}
