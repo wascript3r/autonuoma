@@ -22,8 +22,8 @@ const (
 	getMetaSQL          = "SELECT fk_klientas, fk_klientų_aptarnavimo_specialistas, užbaigta FROM užklausos WHERE id = $1"
 	getMetaForUpdateSQL = getMetaSQL + " FOR UPDATE"
 
-	getAllSQL    = "SELECT u.id, u.fk_klientų_aptarnavimo_specialistas, u.užbaigta, v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN vartotojai v ON (v.id = u.fk_klientas) INNER JOIN (SELECT fk_uzklausa, tekstas, išsiųsta FROM žinutės WHERE id IN (SELECT MIN(id) FROM žinutės GROUP BY fk_uzklausa)) ž ON (ž.fk_uzklausa = u.id) ORDER BY u.id ASC"
-	getByUserSQL = "SELECT u.id, u.fk_klientų_aptarnavimo_specialistas, u.užbaigta, v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN vartotojai v ON (v.id = u.fk_klientas) INNER JOIN (SELECT fk_uzklausa, tekstas, išsiųsta FROM žinutės WHERE id IN (SELECT MIN(id) FROM žinutės GROUP BY fk_uzklausa)) ž ON (ž.fk_uzklausa = u.id) WHERE u.fk_klientas = $1 ORDER BY u.id ASC"
+	getAllSQL    = "SELECT u.id, u.fk_klientų_aptarnavimo_specialistas, u.užbaigta, v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN vartotojai v ON (v.id = u.fk_klientas) INNER JOIN (SELECT fk_uzklausa, tekstas, išsiųsta FROM žinutės WHERE id IN (SELECT MIN(id) FROM žinutės GROUP BY fk_uzklausa)) ž ON (ž.fk_uzklausa = u.id) ORDER BY u.id DESC"
+	getByUserSQL = "SELECT u.id, u.fk_klientų_aptarnavimo_specialistas, u.užbaigta, v.id, v.vardas, v.pavardė, ž.tekstas, ž.išsiųsta FROM užklausos u INNER JOIN vartotojai v ON (v.id = u.fk_klientas) INNER JOIN (SELECT fk_uzklausa, tekstas, išsiųsta FROM žinutės WHERE id IN (SELECT MIN(id) FROM žinutės GROUP BY fk_uzklausa)) ž ON (ž.fk_uzklausa = u.id) WHERE u.fk_klientas = $1 ORDER BY u.id DESC"
 )
 
 type scanFunc func(row pgsql.Row) (*domain.TicketFull, error)
