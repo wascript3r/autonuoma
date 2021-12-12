@@ -89,9 +89,9 @@ CREATE TABLE automobiliai
 
 CREATE TABLE dažniausiai_užduodami_klausimai
 (
-	klausimas varchar (255),
-	atsakymas varchar (255),
-	kategorija integer,
+	klausimas varchar (255) NOT NULL,
+	atsakymas varchar (255) NOT NULL,
+	kategorija integer NOT NULL,
 	id serial,
 	PRIMARY KEY(id),
 	FOREIGN KEY(kategorija) REFERENCES klausimų_kategorijos (id)
@@ -99,14 +99,14 @@ CREATE TABLE dažniausiai_užduodami_klausimai
 
 CREATE TABLE vartotojai
 (
-	vardas varchar (255),
-	pavardė varchar (255),
-	el_paštas varchar (255),
-	gimimo_data date,
-	slaptažodis varchar (255),
-	balansas integer,
-	asmens_kodas varchar (255),
-	rolė integer,
+	vardas varchar (255) NOT NULL,
+	pavardė varchar (255) NOT NULL,
+	el_paštas varchar (255) NOT NULL,
+	gimimo_data date NOT NULL,
+	slaptažodis varchar (255) NOT NULL,
+	balansas integer NOT NULL,
+	asmens_kodas varchar (255) NOT NULL,
+	rolė integer NOT NULL,
 	id serial,
 	PRIMARY KEY(id),
 	FOREIGN KEY(rolė) REFERENCES rolės (id)
@@ -139,7 +139,7 @@ CREATE TABLE rezervacijos
 
 CREATE TABLE sesijos
 (
-	galiojimo_pabaiga timestamp with time zone,
+	galiojimo_pabaiga timestamp with time zone NOT NULL,
 	id varchar (255),
 	fk_Vartotojas integer NOT NULL,
 	PRIMARY KEY(id),
@@ -148,7 +148,7 @@ CREATE TABLE sesijos
 
 CREATE TABLE užklausos
 (
-	sukurta timestamp with time zone,
+	sukurta timestamp with time zone NOT NULL,
 	užbaigta timestamp with time zone,
 	id serial,
 	fk_klientas integer NOT NULL,
@@ -172,9 +172,9 @@ CREATE TABLE vairuotojo_pažymėjimai
 
 CREATE TABLE įvertinimai
 (
-	žvaigždutės integer,
+	žvaigždutės integer NOT NULL,
 	komentaras varchar (255),
-	data timestamp with time zone,
+	data timestamp with time zone NOT NULL,
 	id serial,
 	fk_Uzklausa integer NOT NULL,
 	PRIMARY KEY(id),
@@ -207,8 +207,8 @@ CREATE TABLE vairuotojo_pažymėjimo_nuotraukos
 
 CREATE TABLE žinutės
 (
-	tekstas varchar (255),
-	išsiųsta timestamp with time zone,
+	tekstas varchar (255) NOT NULL,
+	išsiųsta timestamp with time zone NOT NULL,
 	id serial,
 	fk_Vartotojas integer NOT NULL,
 	fk_Uzklausa integer NOT NULL,
