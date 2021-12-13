@@ -189,6 +189,7 @@ CREATE TABLE kelionės
 	pabaigos_taško_platuma decimal,
 	pabaigos_taško_ilguma decimal,
 	trukmė time,
+	kaina decimal,
 	id serial,
 	fk_Rezervacija integer NOT NULL,
 	PRIMARY KEY(id),
