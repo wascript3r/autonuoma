@@ -88,3 +88,16 @@ type UpdateReq struct {
 type UpdateRes struct {
 	Email string `json:"email"`
 }
+
+// GetTrips
+
+const TripDateTimeFormat = "2006-01-02 15:04:05"
+
+type TripsRes struct {
+	ID    int     `json:"id"`
+	Begin string  `json:"begin_time"`
+	End   string  `json:"end_time"`
+	From  string  `json:"from"`
+	To    string  `json:"to"`
+	Price float32 `json:"price"`
+}

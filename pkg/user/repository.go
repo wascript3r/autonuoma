@@ -25,4 +25,6 @@ type Repository interface {
 
 	UpdateEmail(ctx context.Context, uid int, email string) error
 	UpdatePassword(ctx context.Context, uid int, hash string) error
+
+	GetTrips(ctx context.Context, uid int) ([]*domain.Trip, error)
 }
