@@ -172,3 +172,24 @@ func (u *Usecase) UpdateUser(ctx context.Context, uid int, data *user.UpdateReq)
 
 	return &user.UpdateRes{Email: result.Email}, nil
 }
+
+func (u *Usecase) GetTrips(ctx context.Context, uid int) ([]*user.TripsRes, error) {
+	res, err := u.userRepo.GetTrips(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	trips := make([]*user.TripsRes, 0)
+	for _, t := range res {
+		trips = append(trips, &user.TripsRes{
+			ID:    t.ID,
+			Begin: t.Begin.Format(user.TripDateTimeFormat),
+			End:   t.End.Format(user.TripDateTimeFormat),
+			From:  t.From,
+			To:    t.To,
+			Price: t.Price,
+		})
+	}
+
+	return trips, nil
+}

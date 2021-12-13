@@ -15,4 +15,5 @@ type Usecase interface {
 	GetInfo(userID int, role domain.Role) *AuthenticateRes
 	GetData(ctx context.Context, uid int) (*UserProfile, error)
 	UpdateUser(ctx context.Context, uid int, data *UpdateReq) (*UpdateRes, error)
+	GetTrips(ctx context.Context, uid int) ([]*TripsRes, error)
 }
