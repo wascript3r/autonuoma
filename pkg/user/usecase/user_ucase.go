@@ -141,3 +141,34 @@ func (u *Usecase) GetData(ctx context.Context, uid int) (*user.UserProfile, erro
 
 	return user, nil
 }
+
+func (u *Usecase) UpdateUser(ctx context.Context, uid int, data *user.UpdateReq) (*user.UpdateRes, error) {
+	if len(data.Email) > 0 {
+		exists, err := u.userRepo.EmailExists(ctx, data.Email)
+		if err != nil || exists {
+			return nil, err
+		}
+
+		if err := u.userRepo.UpdateEmail(ctx, uid, data.Email); err != nil {
+			return nil, err
+		}
+	}
+
+	if len(data.Password) > 0 {
+		hash, err := u.pwHasher.Hash(data.Password)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := u.userRepo.UpdatePassword(ctx, uid, hash); err != nil {
+			return nil, err
+		}
+	}
+
+	result, err := u.userRepo.GetData(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user.UpdateRes{Email: result.Email}, nil
+}

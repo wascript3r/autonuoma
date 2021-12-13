@@ -33,6 +33,7 @@ func NewHTTPHandler(ctx context.Context, r *httprouter.Router, auth *middleware.
 	r.GET("/api/user/logout", auth.Wrap(ctx, handler.LogoutUser))
 	r.GET("/api/user/info", auth.Wrap(ctx, handler.UserInfo))
 	r.GET("/api/user", auth.Wrap(ctx, handler.UserData))
+	r.POST("/api/user/update", auth.Wrap(ctx, handler.UpdateUser))
 }
 
 func serveError(w http.ResponseWriter, err error) {
@@ -139,6 +140,29 @@ func (h *HTTPHandler) UserData(ctx context.Context, w http.ResponseWriter, _ *ht
 	}
 
 	res, err := h.userUcase.GetData(ctx, s.UserID)
+	if err != nil {
+		httpjson.InternalError(w, nil)
+		return
+	}
+
+	httpjson.ServeJSON(w, res)
+}
+
+func (h *HTTPHandler) UpdateUser(ctx context.Context, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	s, err := h.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		httpjson.InternalError(w, nil)
+		return
+	}
+
+	req := &user.UpdateReq{}
+
+	if err = json.NewDecoder(r.Body).Decode(req); err != nil {
+		httpjson.BadRequest(w, nil)
+		return
+	}
+
+	res, err := h.userUcase.UpdateUser(ctx, s.UserID, req)
 	if err != nil {
 		httpjson.InternalError(w, nil)
 		return
