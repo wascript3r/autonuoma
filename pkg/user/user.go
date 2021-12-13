@@ -101,3 +101,10 @@ type TripsRes struct {
 	To    string  `json:"to"`
 	Price float32 `json:"price"`
 }
+
+// Payment
+
+type PaymentRes struct {
+	Status  string  `json:"status"`
+	Balance float32 `json:"balance"`
+}

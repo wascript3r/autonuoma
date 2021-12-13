@@ -35,6 +35,7 @@ func NewHTTPHandler(ctx context.Context, r *httprouter.Router, auth *middleware.
 	r.GET("/api/user", auth.Wrap(ctx, handler.UserData))
 	r.POST("/api/user/update", auth.Wrap(ctx, handler.UpdateUser))
 	r.GET("/api/user/trips", auth.Wrap(ctx, handler.GetTrips))
+	r.GET("/api/user/payment", auth.Wrap(ctx, handler.Payment))
 }
 
 func serveError(w http.ResponseWriter, err error) {
@@ -180,6 +181,22 @@ func (h *HTTPHandler) GetTrips(ctx context.Context, w http.ResponseWriter, _ *ht
 	}
 
 	res, err := h.userUcase.GetTrips(ctx, s.UserID)
+	if err != nil {
+		httpjson.InternalError(w, nil)
+		return
+	}
+
+	httpjson.ServeJSON(w, res)
+}
+
+func (h *HTTPHandler) Payment(ctx context.Context, w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+	s, err := h.sessionUcase.LoadCtx(ctx)
+	if err != nil {
+		httpjson.InternalError(w, nil)
+		return
+	}
+
+	res, err := h.userUcase.CheckPayment(ctx, s.UserID)
 	if err != nil {
 		httpjson.InternalError(w, nil)
 		return

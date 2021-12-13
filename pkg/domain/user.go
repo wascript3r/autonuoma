@@ -22,7 +22,7 @@ type User struct {
 	FirstName string
 	LastName  string
 	BirthDate time.Time
-	Balance   int64
+	Balance   float32
 	PIN       string
 	RoleID    Role
 }

@@ -27,4 +27,6 @@ type Repository interface {
 	UpdatePassword(ctx context.Context, uid int, hash string) error
 
 	GetTrips(ctx context.Context, uid int) ([]*domain.Trip, error)
+
+	AddPayment(ctx context.Context, uid int, amount int64) error
 }
