@@ -14,4 +14,5 @@ type Usecase interface {
 	Logout(ctx context.Context, ss *domain.Session) error
 	GetInfo(userID int, role domain.Role) *AuthenticateRes
 	GetData(ctx context.Context, uid int) (*UserProfile, error)
+	UpdateUser(ctx context.Context, uid int, data *UpdateReq) (*UpdateRes, error)
 }

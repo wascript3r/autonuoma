@@ -22,4 +22,7 @@ type Repository interface {
 
 	GetData(ctx context.Context, uid int) (*UserProfile, error)
 	GetLicenseStatus(ctx context.Context, uid int) (string, error)
+
+	UpdateEmail(ctx context.Context, uid int, email string) error
+	UpdatePassword(ctx context.Context, uid int, hash string) error
 }

@@ -20,6 +20,8 @@ const (
 	addBalanceSQL        = "UPDATE vartotojai SET balansas = balansas + $2 WHERE id = $1"
 	getDataSQL           = "SELECT vardas, pavardė, el_paštas, gimimo_data, balansas FROM vartotojai WHERE id = $1"
 	getLicenseStatusSQL  = "SELECT b.name, p.galiojimo_pabaiga FROM vairuotojo_pažymėjimai p, vairuotojo_pažymėjimo_būsenos b WHERE p.fk_vartotojas = $1 AND b.id = p.būsena AND p.būsena = $2"
+	updateEmailSQL       = "UPDATE vartotojai SET el_paštas = $2 WHERE id = $1"
+	updatePasswordSQL    = "UPDATE vartotojai SET slaptažodis = $2 WHERE id = $1"
 )
 
 type PgRepo struct {
@@ -189,4 +191,18 @@ func (p *PgRepo) GetData(ctx context.Context, uid int) (*user.UserProfile, error
 	}
 
 	return u, nil
+}
+
+func (p *PgRepo) UpdateEmail(ctx context.Context, uid int, email string) error {
+	if err := p.conn.QueryRowContext(ctx, updateEmailSQL, uid, email).Err(); err != nil {
+		return pgsql.ParseSQLError(err)
+	}
+	return nil
+}
+
+func (p *PgRepo) UpdatePassword(ctx context.Context, uid int, hash string) error {
+	if err := p.conn.QueryRowContext(ctx, updatePasswordSQL, uid, hash).Err(); err != nil {
+		return pgsql.ParseSQLError(err)
+	}
+	return nil
 }

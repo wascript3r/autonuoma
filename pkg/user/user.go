@@ -77,3 +77,14 @@ type AuthenticateRes struct {
 type TempToken struct {
 	Token string `json:"token"`
 }
+
+// UpdateUser
+
+type UpdateReq struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type UpdateRes struct {
+	Email string `json:"email"`
+}
