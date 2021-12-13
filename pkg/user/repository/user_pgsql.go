@@ -160,7 +160,7 @@ func (p *PgRepo) GetLicenseStatus(ctx context.Context, uid int) (string, error) 
 		return strings.TrimSpace(licenseStatus), nil
 	}
 
-	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid, domain.RejectedLicenseStatus).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
+	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid, domain.SubmittedLicenseStatus).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
 		return "", err
 	}
 
@@ -168,7 +168,7 @@ func (p *PgRepo) GetLicenseStatus(ctx context.Context, uid int) (string, error) 
 		return strings.TrimSpace(licenseStatus), nil
 	}
 
-	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid, domain.SubmittedLicenseStatus).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
+	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid, domain.RejectedLicenseStatus).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
 		return "", err
 	}
 
