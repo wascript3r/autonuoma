@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -102,6 +103,8 @@ const (
 var (
 	WorkDir string
 	Cfg     *Config
+
+	flagLicensesDir = flag.String("img", "public/licenses/", "license images directory path")
 )
 
 func init() {
@@ -133,6 +136,11 @@ func fatalError(err error) {
 }
 
 func main() {
+	flag.Parse()
+	if *flagLicensesDir == "" {
+		log.Fatal("Missing license images directory path (-img public/licenses/)")
+	}
+
 	// Logging
 	logFlags := 0
 	if Cfg.Log.ShowTimestamp {
@@ -237,7 +245,7 @@ func main() {
 		licenseValidator,
 
 		"license",
-		"./public/licenses",
+		*flagLicensesDir,
 	)
 
 	// FAQ
@@ -351,6 +359,7 @@ func main() {
 	httpRouter := httprouter.New()
 	httpRouter.MethodNotAllowed = MethodNotAllowedHnd
 	httpRouter.NotFound = NotFoundHnd
+	httpRouter.ServeFiles("/licenses/*filepath", http.Dir(*flagLicensesDir))
 
 	if Cfg.HTTP.EnablePprof {
 		// pprof
