@@ -16,4 +16,5 @@ type Usecase interface {
 	GetData(ctx context.Context, uid int) (*UserProfile, error)
 	UpdateUser(ctx context.Context, uid int, data *UpdateReq) (*UpdateRes, error)
 	GetTrips(ctx context.Context, uid int) ([]*TripsRes, error)
+	CheckPayment(ctx context.Context, uid int) (*PaymentRes, error)
 }

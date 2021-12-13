@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/wascript3r/autonuoma/pkg/domain"
@@ -192,4 +194,40 @@ func (u *Usecase) GetTrips(ctx context.Context, uid int) ([]*user.TripsRes, erro
 	}
 
 	return trips, nil
+}
+
+func (u *Usecase) CheckPayment(ctx context.Context, uid int) (*user.PaymentRes, error) {
+	rand.Seed(time.Now().UnixNano())
+
+	amount := rand.Intn(50) * 100
+	var status string
+
+	switch rand.Intn(2) {
+	case 0:
+		status = "successful"
+		if err := u.userRepo.AddPayment(ctx, uid, int64(amount)); err != nil {
+			return nil, err
+		}
+
+		if err := u.userRepo.AddBalance(ctx, uid, int64(amount)); err != nil {
+			return nil, err
+		}
+	case 1:
+		status = "cancelled"
+		if err := u.userRepo.AddPayment(ctx, uid, 0); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unknown action")
+	}
+
+	data, err := u.GetData(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user.PaymentRes{
+		Status:  status,
+		Balance: data.Balance,
+	}, nil
 }

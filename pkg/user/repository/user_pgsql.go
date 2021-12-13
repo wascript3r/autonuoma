@@ -23,6 +23,7 @@ const (
 	updateEmailSQL       = "UPDATE vartotojai SET el_paštas = $2 WHERE id = $1"
 	updatePasswordSQL    = "UPDATE vartotojai SET slaptažodis = $2 WHERE id = $1"
 	getTripsSQL          = "SELECT k.id, k.pradžios_laikas, k.pabaigos_laikas, r.pradzios_adresas, r.pabaigos_adresas, k.kaina FROM kelionės k, rezervacijos r WHERE k.fk_rezervacija = r.id AND r.fk_vartotojas = $1"
+	addPaymentSQL        = "INSERT INTO mokėjimai (suma, būsena, fk_vartotojas) VALUES ($1, $2, $3)"
 )
 
 type PgRepo struct {
@@ -174,6 +175,7 @@ func (p *PgRepo) GetData(ctx context.Context, uid int) (*user.UserProfile, error
 	if err != nil {
 		return nil, pgsql.ParseSQLError(err)
 	}
+	u.Balance /= 100
 
 	return u, nil
 }
@@ -230,4 +232,17 @@ func (p *PgRepo) GetTrips(ctx context.Context, uid int) ([]*domain.Trip, error) 
 	}
 
 	return scanRows(rows)
+}
+
+func (p *PgRepo) AddPayment(ctx context.Context, uid int, amount int64) error {
+	if amount <= 0 {
+		if err := p.conn.QueryRowContext(ctx, addPaymentSQL, amount, 1, uid).Err(); err != nil {
+			return pgsql.ParseSQLError(err)
+		}
+	} else {
+		if err := p.conn.QueryRowContext(ctx, addPaymentSQL, amount, 2, uid).Err(); err != nil {
+			return pgsql.ParseSQLError(err)
+		}
+	}
+	return nil
 }
