@@ -19,7 +19,7 @@ const (
 	deductBalanceSQL     = "UPDATE vartotojai SET balansas = balansas - $2 WHERE id = $1"
 	addBalanceSQL        = "UPDATE vartotojai SET balansas = balansas + $2 WHERE id = $1"
 	getDataSQL           = "SELECT vardas, pavardė, el_paštas, gimimo_data, balansas FROM vartotojai WHERE id = $1"
-	getLicenseStatusSQL  = "SELECT b.name, p.galiojimo_pabaiga FROM vairuotojo_pažymėjimai p, vairuotojo_pažymėjimo_būsenos b WHERE p.fk_vartotojas = $1 AND b.id = p.būsena AND p.būsena = $2"
+	getLicenseStatusSQL  = "SELECT b.name, p.galiojimo_pabaiga FROM vairuotojo_pažymėjimai p INNER JOIN vairuotojo_pažymėjimo_būsenos b ON (b.id = p.būsena) WHERE p.fk_vartotojas = $1 ORDER BY p.id DESC LIMIT 1"
 	updateEmailSQL       = "UPDATE vartotojai SET el_paštas = $2 WHERE id = $1"
 	updatePasswordSQL    = "UPDATE vartotojai SET slaptažodis = $2 WHERE id = $1"
 )
@@ -150,7 +150,7 @@ func (p *PgRepo) GetLicenseStatus(ctx context.Context, uid int) (string, error) 
 	var licenseStatus string
 	var licenseEndDate time.Time
 
-	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid, domain.ConfirmedLicenseStatus).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
+	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
 		return "", err
 	}
 
@@ -159,22 +159,6 @@ func (p *PgRepo) GetLicenseStatus(ctx context.Context, uid int) (string, error) 
 			return "pasibaigęs galiojimas", nil
 		}
 
-		return strings.TrimSpace(licenseStatus), nil
-	}
-
-	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid, domain.SubmittedLicenseStatus).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
-		return "", err
-	}
-
-	if len(licenseStatus) > 0 {
-		return strings.TrimSpace(licenseStatus), nil
-	}
-
-	if err := p.conn.QueryRowContext(ctx, getLicenseStatusSQL, uid, domain.RejectedLicenseStatus).Scan(&licenseStatus, &licenseEndDate); err != nil && err != sql.ErrNoRows {
-		return "", err
-	}
-
-	if len(licenseStatus) > 0 {
 		return strings.TrimSpace(licenseStatus), nil
 	}
 
