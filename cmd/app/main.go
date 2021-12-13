@@ -74,6 +74,12 @@ import (
 	// CORS
 	_corsMid "github.com/wascript3r/autonuoma/pkg/cors/delivery/http/middleware"
 
+	// Cars
+	_carsHandler "github.com/wascript3r/autonuoma/pkg/cars/delivery/http"
+	_carsRepo "github.com/wascript3r/autonuoma/pkg/cars/repository"
+	_carsUcase "github.com/wascript3r/autonuoma/pkg/cars/usecase"
+	_carsValidator "github.com/wascript3r/autonuoma/pkg/cars/validator"
+
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/gocipher/aes"
 	"github.com/wascript3r/gopool"
@@ -255,6 +261,15 @@ func main() {
 		Cfg.Database.Postgres.QueryTimeout.Duration,
 	)
 
+	// Cars
+	carsRepo := _carsRepo.NewPgRepo(dbConn)
+	carsValidator := _carsValidator.New()
+	carsUcase := _carsUcase.New(
+		carsRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+		carsValidator,
+	)
+
 	// Room
 	roomRepo := _roomRepo.NewMemoryRepo()
 	roomUcase := _roomUcase.New(roomRepo)
@@ -417,6 +432,8 @@ func main() {
 		sessionUcase,
 	)
 	_faqHandler.NewHTTPHandler(httpRouter, faqUcase)
+
+	_carsHandler.NewHTTPHandler(httpRouter, carsUcase)
 
 	httpServer := &http.Server{
 		Addr: ":" + Cfg.HTTP.Port,
