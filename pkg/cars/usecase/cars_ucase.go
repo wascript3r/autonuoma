@@ -37,6 +37,8 @@ func (u *Usecase) GetAll(ctx context.Context) (*cars.GetAllRes, error) {
 			LicensePlate: f.LicensePlate,
 			Make:         f.Make,
 			Model:        f.Model,
+			Latitude:     f.Latitude,
+			Longitude:    f.Longitude,
 		}
 	}
 

@@ -62,6 +62,16 @@ import (
 	_licenseUcase "github.com/wascript3r/autonuoma/pkg/license/usecase"
 	_licenseValidator "github.com/wascript3r/autonuoma/pkg/license/validator"
 
+	// Trip
+	_tripHandler "github.com/wascript3r/autonuoma/pkg/trip/delivery/http"
+	_tripRepo "github.com/wascript3r/autonuoma/pkg/trip/repository"
+	_tripUcase "github.com/wascript3r/autonuoma/pkg/trip/usecase"
+
+	// Reservation
+	_reservationHandler "github.com/wascript3r/autonuoma/pkg/reservation/delivery/http"
+	_reservationRepo "github.com/wascript3r/autonuoma/pkg/reservation/repository"
+	_reservationUcase "github.com/wascript3r/autonuoma/pkg/reservation/usecase"
+
 	// FAQ
 	_faqHandler "github.com/wascript3r/autonuoma/pkg/faq/delivery/http"
 	_faqRepo "github.com/wascript3r/autonuoma/pkg/faq/repository"
@@ -254,6 +264,14 @@ func main() {
 		*flagLicensesDir,
 	)
 
+	// Trip
+	tripRepo := _tripRepo.NewPgRepo(dbConn)
+	tripUsecase := _tripUcase.New(tripRepo)
+
+	// Reservation
+	reservationRepo := _reservationRepo.NewPgRepo(dbConn)
+	reservationUcase := _reservationUcase.New(reservationRepo)
+
 	// FAQ
 	faqRepo := _faqRepo.NewPgRepo(dbConn)
 	faqUcase := _faqUcase.New(
@@ -431,6 +449,26 @@ func main() {
 		licenseUcase,
 		sessionUcase,
 	)
+
+	_tripHandler.NewHTTPHandler(
+		context.Background(),
+
+		httpRouter,
+		clientStack,
+
+		tripUsecase,
+	)
+
+	_reservationHandler.NewHTTPHandler(
+		context.Background(),
+
+		httpRouter,
+		sessionUcase,
+		sessionMid,
+		clientStack,
+		reservationUcase,
+	)
+
 	_faqHandler.NewHTTPHandler(httpRouter, faqUcase)
 
 	_carsHandler.NewHTTPHandler(httpRouter, carsUcase)

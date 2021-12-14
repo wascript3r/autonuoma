@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	getAllSQL    = "SELECT id, valstybiniai_numeriai, markė, modelis FROM automobiliai WHERE pašalintas = false ORDER BY id ASC"
+	getAllSQL    = "SELECT id, valstybiniai_numeriai, markė, modelis, pozicijos_platuma, pozicijos_ilguma FROM automobiliai WHERE pašalintas = false ORDER BY id ASC"
 	getSingleSQL = "SELECT id, valstybiniai_numeriai, markė, modelis, spalva, pozicijos_platuma, pozicijos_ilguma, minutės_kaina, valandos_kaina, paros_kaina, kilometro_kaina, kondicionierius, usb, bluetooth, navigacija, vaikiška_kėdutė, pavarų_dėžė, kuro_tipas FROM automobiliai WHERE id = $1"
 	removeCarSQL = "UPDATE automobiliai SET pašalintas = true WHERE id = $1"
 	addCarSQL    = "INSERT INTO automobiliai (valstybiniai_numeriai, markė, modelis, spalva, minutės_kaina, valandos_kaina, paros_kaina, kilometro_kaina, kondicionierius, usb, bluetooth, navigacija, vaikiška_kėdutė, pavarų_dėžė, kuro_tipas, pašalintas, pozicijos_platuma, pozicijos_ilguma) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, false, $16, $17)"
@@ -29,7 +29,7 @@ func NewPgRepo(c *sql.DB) *PgRepo {
 func scanRow(row pgsql.Row) (*domain.Car, error) {
 	f := &domain.Car{}
 
-	err := row.Scan(&f.ID, &f.LicensePlate, &f.Make, &f.Model)
+	err := row.Scan(&f.ID, &f.LicensePlate, &f.Make, &f.Model, &f.Latitude, &f.Longitude)
 	if err != nil {
 		return nil, pgsql.ParseSQLError(err)
 	}

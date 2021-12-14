@@ -13,6 +13,8 @@ type CarsListInfo struct {
 	LicensePlate string `json:"license_plate"`
 	Make         string `json:"make"`
 	Model        string `json:"model"`
+	Latitude     string `json:"lat"`
+	Longitude    string `json:"lng"`
 }
 
 type GetAllRes struct {
@@ -27,8 +29,8 @@ type SingleCarRes struct {
 	Make            string
 	Model           string
 	Color           string
-	Latitude        float64
-	Longitude       float64
+	Latitude        string
+	Longitude       string
 	MinutePrice     float64
 	HourPrice       float64
 	DayPrice        float64

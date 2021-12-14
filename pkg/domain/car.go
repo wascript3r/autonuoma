@@ -21,8 +21,8 @@ type Car struct {
 	Make            string
 	Model           string
 	Color           string
-	Latitude        float64
-	Longitude       float64
+	Latitude        string
+	Longitude       string
 	MinutePrice     float64
 	HourPrice       float64
 	DayPrice        float64

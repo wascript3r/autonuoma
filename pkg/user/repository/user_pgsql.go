@@ -194,11 +194,11 @@ func (p *PgRepo) UpdatePassword(ctx context.Context, uid int, hash string) error
 	return nil
 }
 
-func scanRows(rows *sql.Rows) ([]*domain.Trip, error) {
-	var trips []*domain.Trip
+func scanRows(rows *sql.Rows) ([]*domain.UserTrip, error) {
+	var trips []*domain.UserTrip
 
 	for rows.Next() {
-		trip := domain.Trip{
+		trip := domain.UserTrip{
 			ID:    0,
 			Begin: time.Now(),
 			End:   time.Now(),
@@ -222,13 +222,13 @@ func scanRows(rows *sql.Rows) ([]*domain.Trip, error) {
 	return trips, nil
 }
 
-func (p *PgRepo) GetTrips(ctx context.Context, uid int) ([]*domain.Trip, error) {
+func (p *PgRepo) GetTrips(ctx context.Context, uid int) ([]*domain.UserTrip, error) {
 	rows, err := p.conn.QueryContext(ctx, getTripsSQL, uid)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			return nil, err
 		}
-		return []*domain.Trip{}, nil
+		return []*domain.UserTrip{}, nil
 	}
 
 	return scanRows(rows)
