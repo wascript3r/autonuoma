@@ -3,13 +3,14 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"time"
+
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/repository/pgsql"
-	"time"
 )
 
 const (
-	createReservationSQL     = "INSERT INTO rezervacijos (sukurta, fk_automobilis, fk_vairuotojas) VALUES ($1, $2, $3) RETURNING id"
+	createReservationSQL     = "INSERT INTO rezervacijos (sukurta, fk_automobilis, fk_vartotojas) VALUES ($1, $2, $3) RETURNING id"
 	cancelReservationSQL     = "UPDATE rezervacijos SET atšaukta = $2 WHERE id = $1"
 	getCurrentReservationSQl = "SELECT sukurta, atšaukta, pradzios_adresas, pabaigos_adresas, id, fk_automobilis, fk_vartotojas FROM rezervacijos WHERE atšaukta = NULL AND fk_vartotojas = $1"
 )
