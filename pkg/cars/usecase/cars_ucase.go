@@ -106,3 +106,64 @@ func (u *Usecase) AddCar(ctx context.Context, req *cars.AddCarReq) (*cars.Single
 
 	return nil, nil
 }
+
+func (u *Usecase) UpdateCar(ctx context.Context, req *cars.UpdateCarReq) (*cars.SingleCarRes, error) {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	if err := u.validate.RawRequest(req); err != nil {
+		return nil, cars.InvalidInputError
+	}
+
+	_, err := u.carsRepo.UpdateCar(c, req.Id, req.LicensePlate, req.Make, req.Model, req.Color, req.MinutePrice, req.HourPrice, req.DayPrice, req.KilometerPrice, req.AirConditioning, req.USB, req.Bluetooth, req.Navigation, req.ChildSeat, req.Gearbox, req.Fuel)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (u *Usecase) CarTrips(ctx context.Context, carId int) (*cars.CarTripsRes, error) {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	fs, err := u.carsRepo.CarTrips(c, carId)
+	if err != nil {
+		return nil, err
+	}
+
+	tripsList := make([]*cars.CarTripsInfo, len(fs))
+	for i, f := range fs {
+		tripsList[i] = &cars.CarTripsInfo{
+			FirstName: f.FirstName,
+			LastName:  f.LastName,
+			Duration:  f.Duration.Format("15:04:05"),
+			Price:     f.Price,
+		}
+	}
+
+	return &cars.CarTripsRes{
+		Trips: tripsList,
+	}, nil
+}
+
+func (u *Usecase) Statistics(ctx context.Context) (*cars.StatisticsRes, error) {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	fs, err := u.carsRepo.Statistics(c)
+	if err != nil {
+		return nil, err
+	}
+
+	statisticsList := make([]*cars.CarStatisticsInfo, len(fs))
+	for i, f := range fs {
+		statisticsList[i] = &cars.CarStatisticsInfo{
+			CarName: f.CarName,
+		}
+	}
+
+	return &cars.StatisticsRes{
+		Statistics: statisticsList,
+	}, nil
+}

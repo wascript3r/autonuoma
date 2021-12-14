@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type FuelType int8
 
 const (
@@ -36,4 +38,13 @@ type Car struct {
 	Gearbox         GearboxType
 }
 
-// (&c.ID, &c.LicensePlate, &c.Make, &c.Model, &c.Color, &c.Latitude, &c.Longitude, &c.MinutePrice, &c.HourPrice, &c.DayPrice, &c.KilometerPrice, &c.AirConditioning, &c.USB, &c.Bluetooth, &c.Navigation, &c.ChildSeat, &c.Fuel, &c.Gearbox)
+type CarTrip struct {
+	FirstName string
+	LastName  string
+	Duration  time.Time
+	Price     int
+}
+
+type CarStatistics struct {
+	CarName string
+}

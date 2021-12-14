@@ -212,6 +212,8 @@ func scanRows(rows *sql.Rows) ([]*domain.UserTrip, error) {
 			rows.Close()
 			return nil, err
 		}
+		trip.Price /= 100
+
 		trips = append(trips, &trip)
 	}
 
