@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/wascript3r/autonuoma/pkg/reservation"
 	"github.com/wascript3r/autonuoma/pkg/session"
@@ -11,7 +13,6 @@ import (
 	"github.com/wascript3r/cryptopay/pkg/errcode"
 	httpjson "github.com/wascript3r/httputil/json"
 	"github.com/wascript3r/httputil/middleware"
-	"net/http"
 )
 
 type HTTPHandler struct {
