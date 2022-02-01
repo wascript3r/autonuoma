@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -22,7 +23,7 @@ const (
 	getLicenseStatusSQL  = "SELECT b.name, p.galiojimo_pabaiga FROM vairuotojo_pažymėjimai p INNER JOIN vairuotojo_pažymėjimo_būsenos b ON (b.id = p.būsena) WHERE p.fk_vartotojas = $1 ORDER BY p.id DESC LIMIT 1"
 	updateEmailSQL       = "UPDATE vartotojai SET el_paštas = $2 WHERE id = $1"
 	updatePasswordSQL    = "UPDATE vartotojai SET slaptažodis = $2 WHERE id = $1"
-	getTripsSQL          = "SELECT k.id, k.pradžios_laikas, k.pabaigos_laikas, r.pradzios_adresas, r.pabaigos_adresas, k.kaina FROM kelionės k, rezervacijos r WHERE k.fk_rezervacija = r.id AND r.fk_vartotojas = $1"
+	getTripsSQL          = "SELECT k.id, k.pradžios_laikas, k.pabaigos_laikas, k.kaina FROM kelionės k, rezervacijos r WHERE k.fk_rezervacija = r.id AND r.fk_vartotojas = $1 AND k.pabaigos_laikas IS NOT NULL"
 	addPaymentSQL        = "INSERT INTO mokėjimai (suma, būsena, fk_vartotojas) VALUES ($1, $2, $3)"
 )
 
@@ -196,7 +197,6 @@ func (p *PgRepo) UpdatePassword(ctx context.Context, uid int, hash string) error
 
 func scanRows(rows *sql.Rows) ([]*domain.UserTrip, error) {
 	var trips []*domain.UserTrip
-
 	for rows.Next() {
 		trip := domain.UserTrip{
 			ID:    0,
@@ -207,12 +207,11 @@ func scanRows(rows *sql.Rows) ([]*domain.UserTrip, error) {
 			Price: 0,
 		}
 
-		err := rows.Scan(&trip.ID, &trip.Begin, &trip.End, &trip.From, &trip.To, &trip.Price)
+		err := rows.Scan(&trip.ID, &trip.Begin, &trip.End, &trip.Price)
 		if err != nil {
 			rows.Close()
 			return nil, err
 		}
-		trip.Price /= 100
 
 		trips = append(trips, &trip)
 	}
@@ -225,7 +224,10 @@ func scanRows(rows *sql.Rows) ([]*domain.UserTrip, error) {
 }
 
 func (p *PgRepo) GetTrips(ctx context.Context, uid int) ([]*domain.UserTrip, error) {
+	fmt.Println("get trips")
+	fmt.Println(uid)
 	rows, err := p.conn.QueryContext(ctx, getTripsSQL, uid)
+	fmt.Println(err)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			return nil, err

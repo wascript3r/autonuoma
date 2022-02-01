@@ -42,6 +42,7 @@ type SingleCarRes struct {
 	ChildSeat       bool
 	Fuel            domain.FuelType
 	Gearbox         domain.GearboxType
+	IsReserved      bool
 }
 
 // Add car

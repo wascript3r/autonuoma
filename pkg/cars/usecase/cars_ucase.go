@@ -56,6 +56,8 @@ func (u *Usecase) GetSingle(ctx context.Context, carId int) (*cars.SingleCarRes,
 		return nil, err
 	}
 
+	isReserved := u.carsRepo.GetCarReservation(c, carId)
+
 	return &cars.SingleCarRes{
 		ID:              fs.ID,
 		LicensePlate:    fs.LicensePlate,
@@ -75,6 +77,7 @@ func (u *Usecase) GetSingle(ctx context.Context, carId int) (*cars.SingleCarRes,
 		ChildSeat:       fs.ChildSeat,
 		Fuel:            fs.Fuel,
 		Gearbox:         fs.Gearbox,
+		IsReserved:      isReserved,
 	}, nil
 }
 

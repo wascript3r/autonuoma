@@ -187,8 +187,8 @@ func (u *Usecase) GetTrips(ctx context.Context, uid int) ([]*user.TripsRes, erro
 			ID:    t.ID,
 			Begin: t.Begin.Format(user.TripDateTimeFormat),
 			End:   t.End.Format(user.TripDateTimeFormat),
-			From:  t.From,
-			To:    t.To,
+			From:  "",
+			To:    "",
 			Price: t.Price,
 		})
 	}

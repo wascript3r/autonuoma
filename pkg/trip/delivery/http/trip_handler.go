@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/wascript3r/autonuoma/pkg/trip"
 	"net/http"
 	"strconv"
@@ -45,20 +46,22 @@ func serveError(w http.ResponseWriter, err error) {
 
 func (h *HTTPHandler) StartTrip(_ context.Context, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req := &trip.StartReq{}
+	fmt.Println("trip start in handler")
 
 	err := json.NewDecoder(r.Body).Decode(req)
+	fmt.Println(err)
 	if err != nil {
 		httpjson.BadRequest(w, nil)
 		return
 	}
 
-	id, err := h.tripUsecase.Start(r.Context(), req)
+	res, err := h.tripUsecase.Start(r.Context(), req)
 	if err != nil {
 		serveError(w, err)
 		return
 	}
 
-	httpjson.ServeJSON(w, id)
+	httpjson.ServeJSON(w, res)
 }
 
 func (h *HTTPHandler) EndTrip(_ context.Context, w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

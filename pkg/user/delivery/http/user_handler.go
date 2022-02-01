@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -181,6 +182,7 @@ func (h *HTTPHandler) GetTrips(ctx context.Context, w http.ResponseWriter, _ *ht
 	}
 
 	res, err := h.userUcase.GetTrips(ctx, s.UserID)
+	fmt.Println(err)
 	if err != nil {
 		httpjson.InternalError(w, nil)
 		return

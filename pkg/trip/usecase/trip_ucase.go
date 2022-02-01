@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"github.com/wascript3r/autonuoma/pkg/domain"
 	"github.com/wascript3r/autonuoma/pkg/trip"
 )
@@ -16,17 +17,19 @@ func New(tr trip.Repository) *Usecase {
 	}
 }
 
-func (u *Usecase) Start(ctx context.Context, req *trip.StartReq) (int, error) {
-	var id, err = u.tripRepo.Start(ctx, req.StartTime, req.ReservationID)
+func (u *Usecase) Start(ctx context.Context, req *trip.StartReq) (*trip.StartRes, error) {
+	var id, createdAt, err = u.tripRepo.Start(ctx, req.EndLng, req.EndLat, req.ReservationID)
+	fmt.Println("trip start")
+	fmt.Println(err)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return id, nil
+	return &trip.StartRes{TripID: id, CreatedAt: createdAt}, nil
 }
 
 func (u *Usecase) End(ctx context.Context, req *trip.EndReq) error {
-	err := u.tripRepo.End(ctx, req.TripID, req.EndLat, req.EndLng)
+	err := u.tripRepo.End(ctx, req.TripID, req.Price)
 	if err != nil {
 		return err
 	}
